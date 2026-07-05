@@ -84,7 +84,6 @@ CREATE TABLE IF NOT EXISTS vaults (
 
 CREATE TABLE IF NOT EXISTS payment_methods (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    favorite BOOLEAN DEFAULT FALSE,
     user_id UUID NOT NULL
         REFERENCES users(id)
         ON DELETE CASCADE,
@@ -116,7 +115,6 @@ CREATE TABLE IF NOT EXISTS payment_methods (
 
     created_at TIMESTAMPTZ DEFAULT NOW(),
 
-    created_at TIMESTAMPTZ DEFAULT NOW(),
 
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -338,7 +336,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user
 ON transactions(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_transactions_date
-ON transactions(transaction_date DESC);
+ON transactions(transaction_time DESC);
 
 CREATE INDEX IF NOT EXISTS idx_transactions_category
 ON transactions(category);
