@@ -2,7 +2,6 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Navigation from './components/Navigation';
@@ -32,6 +31,8 @@ export default function App() {
       }
     }
   }, [preferences?.reminderEnabled]);
+
+
 
   // Daily Reminder background checker
   useEffect(() => {
