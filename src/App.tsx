@@ -12,8 +12,10 @@ import Wrapped from './components/Wrapped';
 import Settings from './components/Settings';
 import FloatingHub from './components/FloatingHub';
 import { useFinanceStore } from './store';
+import { useAuthContext } from './providers/AuthProvider';
 
 export default function App() {
+  const auth = useAuthContext();
   const [activeTab, setActiveTab] = useState<string>('command_center');
   const { preferences, transactions, recalculateStreak } = useFinanceStore();
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
