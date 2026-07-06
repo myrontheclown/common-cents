@@ -6,6 +6,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Account, Transaction, Budget, Subscription, Goal, Achievement, AIInsight, UserPreferences, PaymentMethod } from './types';
+import { VaultRepository } from './lib/db/repositories';
+import { vaultRowToAccount, accountToVaultInsert, accountToVaultUpdate } from './lib/db/types';
+
+const vaultRepo = new VaultRepository();
 
 interface FinanceState {
   accounts: Account[];
@@ -17,15 +21,18 @@ interface FinanceState {
   insights: AIInsight[];
   preferences: UserPreferences;
   paymentMethods: PaymentMethod[];
+  isVaultsHydrated: boolean;
   
   // Actions
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
   deleteTransaction: (id: string) => void;
   updateTransaction: (tx: Transaction) => void;
   
-  addAccount: (acc: Omit<Account, 'id'>) => void;
-  updateAccount: (acc: Account) => void;
-  deleteAccount: (id: string) => void;
+  setAccounts: (accounts: Account[]) => void;
+  setVaultsHydrated: (hydrated: boolean) => void;
+  addAccount: (acc: Omit<Account, 'id'>, userId?: string) => Promise<void>;
+  updateAccount: (acc: Account) => Promise<void>;
+  deleteAccount: (id: string) => Promise<void>;
   
   addBudget: (bgt: Omit<Budget, 'id'>) => void;
   updateBudget: (bgt: Budget) => void;
@@ -370,8 +377,12 @@ export const useFinanceStore = create<FinanceState>()(
         lastLoggedDate: ''
       },
       paymentMethods: initialPaymentMethods,
+      isVaultsHydrated: false,
 
       // Actions
+      setAccounts: (accounts) => set({ accounts }),
+      setVaultsHydrated: (hydrated) => set({ isVaultsHydrated: hydrated }),
+
       addTransaction: (tx) => {
         const id = 't-' + Math.random().toString(36).substring(2, 9);
         const newTx: Transaction = { ...tx, id };
@@ -477,23 +488,77 @@ export const useFinanceStore = create<FinanceState>()(
         updateStreakAndAchievementsInternal(set, get, nextTxs);
       },
 
-      addAccount: (acc) => {
-        const id = 'acc-' + Math.random().toString(36).substring(2, 9);
-        set(state => ({
-          accounts: [...state.accounts, { ...acc, id }]
+      addAccount: async (acc, userId) => {
+        console.log("STORE ADD ACCOUNT");
+        console.log("USER ID:", userId);
+        console.log("ACCOUNT:", acc);
+        if (!userId) {
+          const id = 'acc-' + Math.random().toString(36).substring(2, 9);
+          set(s => ({ accounts: [...s.accounts, { ...acc, id }] }));
+          return;
+        }
+        const tempId = crypto.randomUUID();
+        const optimistic: Account = { ...acc, id: tempId };
+        const snapshot = get().accounts;
+        set(s => ({ accounts: [...s.accounts, optimistic] }));
+        try {
+
+        console.log("CALLING SUPABASE INSERT");
+
+        const row = await vaultRepo.createVault(
+          userId,
+          accountToVaultInsert(acc)
+        );
+
+        console.log("SUPABASE RETURNED:");
+        console.log(row);
+
+        set(s => ({
+          accounts: s.accounts.map(a =>
+            a.id === tempId
+              ? vaultRowToAccount(row)
+              : a
+          )
         }));
+
+      } catch (e) {
+
+        console.error("SUPABASE INSERT FAILED");
+        console.error(e);
+
+        set({ accounts: snapshot });
+
+        throw e;
+      }
       },
 
-      updateAccount: (updatedAcc) => {
-        set(state => ({
-          accounts: state.accounts.map(acc => acc.id === updatedAcc.id ? updatedAcc : acc)
+      updateAccount: async (updatedAcc) => {
+        const snapshot = get().accounts;
+        set(s => ({
+          accounts: s.accounts.map(acc => acc.id === updatedAcc.id ? updatedAcc : acc)
         }));
+        try {
+          const row = await vaultRepo.updateVault(updatedAcc.id, accountToVaultUpdate(updatedAcc));
+          set(s => ({
+            accounts: s.accounts.map(a => a.id === row.id ? vaultRowToAccount(row) : a)
+          }));
+        } catch (e) {
+          set({ accounts: snapshot });
+          throw e;
+        }
       },
 
-      deleteAccount: (id) => {
-        set(state => ({
-          accounts: state.accounts.filter(acc => acc.id !== id)
+      deleteAccount: async (id) => {
+        const snapshot = get().accounts;
+        set(s => ({
+          accounts: s.accounts.filter(acc => acc.id !== id)
         }));
+        try {
+          await vaultRepo.deleteVault(id);
+        } catch (e) {
+          set({ accounts: snapshot });
+          throw e;
+        }
       },
 
       addBudget: (bgt) => {
@@ -649,6 +714,10 @@ export const useFinanceStore = create<FinanceState>()(
     }),
     {
       name: 'finance-os-storage',
+      partialize: (state) => {
+        const { isVaultsHydrated, ...rest } = state;
+        return rest;
+      },
     }
   )
 );

@@ -132,6 +132,10 @@ Fields:
 - description
 - category
 - notes
+- tags
+- status
+- recurring
+- recurring_frequency
 - created_at
 - updated_at
 
@@ -140,6 +144,16 @@ Transaction types:
 - income
 - expense
 - transfer
+
+- status
+
+Statuses:
+
+- completed
+- pending
+- failed
+
+- tags
 
 ---
 
@@ -228,3 +242,13 @@ Fields:
 - user_id
 - achievement_id
 - unlocked_at
+
+## DESIGN PRINCIPLES
+
+1. Vaults store money.
+2. Payment methods access money.
+3. Transactions create financial history.
+4. Common Cents never stores banking credentials.
+5. Analytics are derived from transactions.
+6. Net worth is derived from vault balances.
+7. The database must support local-first caching.

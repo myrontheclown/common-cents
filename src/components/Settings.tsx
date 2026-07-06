@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import { useAuthContext } from '../providers/AuthProvider';
 import React, { useState } from 'react';
 import { 
   Settings as SettingsIcon, 
@@ -27,6 +27,7 @@ import {
 import { useFinanceStore } from '../store';
 
 export default function Settings() {
+  const auth = useAuthContext();
   const { 
     preferences, 
     achievements, 
@@ -90,17 +91,25 @@ export default function Settings() {
     triggerNotification('SYSTEM CONFIGURATION RE-ALIGNED SUCCESSFULLY.');
   };
 
-  const handleAccountSubmit = (e: React.FormEvent) => {
+  const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAccName || !newAccBalance || isNaN(Number(newAccBalance))) return;
 
-    addAccount({
-      name: newAccName,
-      type: newAccType,
-      balance: parseFloat(parseFloat(newAccBalance).toFixed(2)),
-      color: newAccColor,
-      icon: newAccIcon
-    });
+    if (!auth.userId) {
+      console.error("No authenticated user found");
+      return;
+    }
+
+    await addAccount(
+      {
+        name: newAccName,
+        type: newAccType,
+        balance: parseFloat(parseFloat(newAccBalance).toFixed(2)),
+        color: newAccColor,
+        icon: newAccIcon
+      },
+      auth.userId
+    );
 
     setNewAccName('');
     setNewAccBalance('');

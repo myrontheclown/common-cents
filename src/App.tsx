@@ -13,17 +13,44 @@ import Settings from './components/Settings';
 import FloatingHub from './components/FloatingHub';
 import { useFinanceStore } from './store';
 import { useAuthContext } from './providers/AuthProvider';
+import { VaultRepository } from './lib/db/repositories';
+import { vaultRowToAccount } from './lib/db/types';
+
+const vaultRepo = new VaultRepository();
 
 export default function App() {
   const auth = useAuthContext();
   const [activeTab, setActiveTab] = useState<string>('command_center');
-  const { preferences, transactions, recalculateStreak } = useFinanceStore();
+  const { preferences, transactions, recalculateStreak, isVaultsHydrated, setAccounts, setVaultsHydrated } = useFinanceStore();
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [lastNotificationDate, setLastNotificationDate] = useState<string>('');
 
   useEffect(() => {
     recalculateStreak();
   }, [recalculateStreak]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isVaultsHydrated) return;
+
+    console.log("HYDRATION START");
+
+    (async () => {
+      try {
+        const vaults = await vaultRepo.getVaults(userId);
+        console.log("VAULTS FETCHED", vaults.length);
+
+        if (vaults.length > 0) {
+          setAccounts(vaults.map(vaultRowToAccount));
+        }
+      } catch (err) {
+        console.error("VAULT HYDRATION FAILED", err);
+      } finally {
+        setVaultsHydrated(true);
+        console.log("HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isVaultsHydrated, setAccounts, setVaultsHydrated]);
 
   // Request browser notification permission if enabled and default
   useEffect(() => {
