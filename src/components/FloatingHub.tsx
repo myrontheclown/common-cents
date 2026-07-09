@@ -17,10 +17,12 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
+import { useAuthContext } from '../providers/AuthProvider';
 
 type ModalType = 'expense' | 'income' | 'goal' | 'transfer' | 'subscription' | 'payment_method' | null;
 
 export default function FloatingHub() {
+  const auth = useAuthContext();
   const { accounts, paymentMethods, addTransaction, addGoal, addSubscription, addPaymentMethod } = useFinanceStore();
   const [isOpen, setIsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -147,7 +149,7 @@ export default function FloatingHub() {
       type: 'expense',
       accountId,
       paymentMethodId: paymentMethodId || undefined
-    });
+    }, auth.userId ?? undefined);
 
     const accountName = accounts.find(a => a.id === accountId)?.name || 'VAULT';
     triggerToast(`EXPENSE OF ₹${parsedAmount.toLocaleString('en-IN')} LOGGED TO ${accountName.toUpperCase()} SECURELY.`);
@@ -178,7 +180,7 @@ export default function FloatingHub() {
       type: 'income',
       accountId,
       paymentMethodId: paymentMethodId || undefined
-    });
+    }, auth.userId ?? undefined);
 
     const accountName = accounts.find(a => a.id === accountId)?.name || 'VAULT';
     triggerToast(`INFLOW OF ₹${parsedAmount.toLocaleString('en-IN')} DEPOSITED TO ${accountName.toUpperCase()} SECURELY.`);
@@ -208,7 +210,7 @@ export default function FloatingHub() {
       deadline: goalDeadline,
       category: 'Savings',
       status: 'active'
-    });
+    }, auth.userId ?? undefined);
 
     triggerToast(`NEW GOAL "${goalName.toUpperCase()}" SAVED WITH ₹${parsedTarget.toLocaleString('en-IN')} TARGET.`);
     closeModal();
@@ -242,7 +244,7 @@ export default function FloatingHub() {
       category: 'Transfer',
       type: 'expense',
       accountId: fromAccountId
-    });
+    }, auth.userId ?? undefined);
 
     // Add destination credit
     addTransaction({
@@ -252,7 +254,7 @@ export default function FloatingHub() {
       category: 'Transfer',
       type: 'income',
       accountId: toAccountId
-    });
+    }, auth.userId ?? undefined);
 
     triggerToast(`INTER-VAULT TRANSFER OF ₹${parsedAmount.toLocaleString('en-IN')} EXECUTED SUCCESSFULLY.`);
     closeModal();
@@ -285,7 +287,7 @@ export default function FloatingHub() {
       active: true,
       icon: subIcon,
       color: subColor
-    });
+    }, auth.userId ?? undefined);
 
     triggerToast(`SUBSCRIPTION "${subServiceName.toUpperCase()}" ADDED SECURELY.`);
     closeModal();

@@ -22,7 +22,7 @@ export default function Navigation({ activeTab, setActiveTab }: NavigationProps)
   const navItems = [
     { id: 'command_center', label: 'Command', emoji: '🏠' },
     { id: 'ledger', label: 'Ledger', emoji: '💸' },
-    { id: 'insights', label: 'Insights', emoji: '📊' },
+    { id: 'insights', label: 'Journal', emoji: '📖' },
     { id: 'wrapped', label: 'Wrapped', emoji: '🎵' },
     { id: 'settings', label: 'Settings', emoji: '⚙️' },
   ];

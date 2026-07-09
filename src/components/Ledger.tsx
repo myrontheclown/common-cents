@@ -21,9 +21,11 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
+import { useAuthContext } from '../providers/AuthProvider';
 import { Transaction, Subscription, PaymentMethod } from '../types';
 
 export default function Ledger() {
+  const auth = useAuthContext();
   const { 
     transactions, 
     accounts, 
@@ -105,7 +107,7 @@ export default function Ledger() {
       accountId: newAccId,
       paymentMethodId: newPmId || undefined,
       date: newDate
-    });
+    }, auth.userId ?? undefined);
 
     // Reset and close
     setNewDesc('');

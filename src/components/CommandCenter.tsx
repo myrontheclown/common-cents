@@ -27,6 +27,7 @@ import {
   X
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
+import { useAuthContext } from '../providers/AuthProvider';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 interface CommandCenterProps {
@@ -47,6 +48,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     setInsights,
     paymentMethods
   } = useFinanceStore();
+  const auth = useAuthContext();
 
   // Loading state for AI insights refresh
   const [refreshingInsights, setRefreshingInsights] = useState(false);
@@ -254,7 +256,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
       type,
       accountId: accId,
       date: new Date().toISOString().split('T')[0]
-    });
+    }, auth.userId ?? undefined);
 
     setDesc('');
     setAmount('');

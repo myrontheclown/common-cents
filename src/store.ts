@@ -7,9 +7,26 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Account, Transaction, Budget, Subscription, Goal, Achievement, AIInsight, UserPreferences, PaymentMethod } from './types';
 import { VaultRepository } from './lib/db/repositories';
+import { TransactionRepository } from './lib/db/repositories/TransactionRepository';
+import { PaymentMethodRepository } from './lib/db/repositories/PaymentMethodRepository';
+import { GoalRepository } from './lib/db/repositories/GoalRepository';
+import { SubscriptionRepository } from './lib/db/repositories/SubscriptionRepository';
+import { BudgetRepository } from './lib/db/repositories/BudgetRepository';
+import { AchievementRepository } from './lib/db/repositories/AchievementRepository';
 import { vaultRowToAccount, accountToVaultInsert, accountToVaultUpdate } from './lib/db/types';
+import { paymentMethodRowToPaymentMethod, paymentMethodToInsert, paymentMethodToUpdate } from './lib/db/paymentMethodTypes';
+import { goalRowToGoal, goalToInsert, goalToUpdate } from './lib/db/goalTypes';
+import { subscriptionRowToSubscription, subscriptionToInsert, subscriptionToUpdate } from './lib/db/subscriptionTypes';
+import { budgetRowToBudget, budgetToInsert, budgetToUpdate } from './lib/db/budgetTypes';
+import { mergeAchievements } from './lib/db/achievementTypes';
 
 const vaultRepo = new VaultRepository();
+const transactionRepo = new TransactionRepository();
+const paymentMethodRepo = new PaymentMethodRepository();
+const goalRepo = new GoalRepository();
+const subscriptionRepo = new SubscriptionRepository();
+const budgetRepo = new BudgetRepository();
+const achievementRepo = new AchievementRepository();
 
 interface FinanceState {
   accounts: Account[];
@@ -22,38 +39,56 @@ interface FinanceState {
   preferences: UserPreferences;
   paymentMethods: PaymentMethod[];
   isVaultsHydrated: boolean;
+  isTransactionsHydrated: boolean;
+  isPaymentMethodsHydrated: boolean;
+  isGoalsHydrated: boolean;
+  isSubscriptionsHydrated: boolean;
+  isBudgetsHydrated: boolean;
+  isAchievementsHydrated: boolean;
   
   // Actions
-  addTransaction: (tx: Omit<Transaction, 'id'>) => void;
-  deleteTransaction: (id: string) => void;
-  updateTransaction: (tx: Transaction) => void;
+  addTransaction: (tx: Omit<Transaction, 'id'>, userId?: string) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
+  updateTransaction: (tx: Transaction) => Promise<void>;
   
   setAccounts: (accounts: Account[]) => void;
   setVaultsHydrated: (hydrated: boolean) => void;
+  setTransactions: (transactions: Transaction[]) => void;
+  setTransactionsHydrated: (hydrated: boolean) => void;
+  setPaymentMethods: (paymentMethods: PaymentMethod[]) => void;
+  setPaymentMethodsHydrated: (hydrated: boolean) => void;
+  setGoals: (goals: Goal[]) => void;
+  setGoalsHydrated: (hydrated: boolean) => void;
+  setSubscriptions: (subscriptions: Subscription[]) => void;
+  setSubscriptionsHydrated: (hydrated: boolean) => void;
+  setBudgets: (budgets: Budget[]) => void;
+  setBudgetsHydrated: (hydrated: boolean) => void;
+  setAchievements: (achievements: Achievement[]) => void;
+  setAchievementsHydrated: (hydrated: boolean) => void;
   addAccount: (acc: Omit<Account, 'id'>, userId?: string) => Promise<void>;
   updateAccount: (acc: Account) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   
-  addBudget: (bgt: Omit<Budget, 'id'>) => void;
-  updateBudget: (bgt: Budget) => void;
-  deleteBudget: (id: string) => void;
+  addBudget: (bgt: Omit<Budget, 'id'>, userId?: string) => Promise<void>;
+  updateBudget: (bgt: Budget) => Promise<void>;
+  deleteBudget: (id: string) => Promise<void>;
   
-  addSubscription: (sub: Omit<Subscription, 'id'>) => void;
-  updateSubscription: (sub: Subscription) => void;
-  deleteSubscription: (id: string) => void;
-  toggleSubscriptionActive: (id: string) => void;
+  addSubscription: (sub: Omit<Subscription, 'id'>, userId?: string) => Promise<void>;
+  updateSubscription: (sub: Subscription) => Promise<void>;
+  deleteSubscription: (id: string) => Promise<void>;
+  toggleSubscriptionActive: (id: string) => Promise<void>;
   
-  addGoal: (goal: Omit<Goal, 'id'>) => void;
-  updateGoal: (goal: Goal) => void;
-  deleteGoal: (id: string) => void;
+  addGoal: (goal: Omit<Goal, 'id'>, userId?: string) => Promise<void>;
+  updateGoal: (goal: Goal) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
   
   updatePreferences: (prefs: Partial<UserPreferences>) => void;
-  unlockAchievement: (id: string) => void;
+  unlockAchievement: (id: string, userId?: string) => Promise<void>;
   setInsights: (insights: AIInsight[]) => void;
 
-  addPaymentMethod: (pm: Omit<PaymentMethod, 'id'>) => void;
-  deletePaymentMethod: (id: string) => void;
-  updatePaymentMethod: (pm: PaymentMethod) => void;
+  addPaymentMethod: (pm: Omit<PaymentMethod, 'id'>, userId?: string) => Promise<void>;
+  deletePaymentMethod: (id: string) => Promise<void>;
+  updatePaymentMethod: (pm: PaymentMethod) => Promise<void>;
   recalculateStreak: () => void;
 }
 
@@ -378,16 +413,61 @@ export const useFinanceStore = create<FinanceState>()(
       },
       paymentMethods: initialPaymentMethods,
       isVaultsHydrated: false,
+      isTransactionsHydrated: false,
+      isPaymentMethodsHydrated: false,
+      isGoalsHydrated: false,
+      isSubscriptionsHydrated: false,
+      isBudgetsHydrated: false,
+      isAchievementsHydrated: false,
 
       // Actions
       setAccounts: (accounts) => set({ accounts }),
       setVaultsHydrated: (hydrated) => set({ isVaultsHydrated: hydrated }),
+      setTransactions: (transactions) => set({ transactions }),
+      setTransactionsHydrated: (hydrated) => set({ isTransactionsHydrated: hydrated }),
+      setPaymentMethods: (paymentMethods) => set({ paymentMethods }),
+      setPaymentMethodsHydrated: (hydrated) => set({ isPaymentMethodsHydrated: hydrated }),
+      setGoals: (goals) => set({ goals }),
+      setGoalsHydrated: (hydrated) => set({ isGoalsHydrated: hydrated }),
+      setSubscriptions: (subscriptions) => set({ subscriptions }),
+      setSubscriptionsHydrated: (hydrated) => set({ isSubscriptionsHydrated: hydrated }),
+      setBudgets: (budgets) => set({ budgets }),
+      setBudgetsHydrated: (hydrated) => set({ isBudgetsHydrated: hydrated }),
+      setAchievements: (achievements) => set({ achievements }),
+      setAchievementsHydrated: (hydrated) => set({ isAchievementsHydrated: hydrated }),
 
-      addTransaction: (tx) => {
-        const id = 't-' + Math.random().toString(36).substring(2, 9);
-        const newTx: Transaction = { ...tx, id };
-        
-        // Update account balance
+      addTransaction: async (tx, userId) => {
+        if (!userId) {
+          const id = 't-' + Math.random().toString(36).substring(2, 9);
+          const newTx: Transaction = { ...tx, id };
+          const updatedAccounts = get().accounts.map(acc => {
+            if (acc.id === tx.accountId) {
+              const balanceDiff = tx.type === 'income' ? tx.amount : -tx.amount;
+              return { ...acc, balance: Number((acc.balance + balanceDiff).toFixed(2)) };
+            }
+            return acc;
+          });
+          const updatedBudgets = get().budgets.map(b => {
+            if (tx.type === 'expense' && b.category.toLowerCase() === tx.category.toLowerCase()) {
+              return { ...b, spent: Number((b.spent + tx.amount).toFixed(2)) };
+            }
+            return b;
+          });
+          const nextTxs = [newTx, ...get().transactions];
+          set({ transactions: nextTxs, accounts: updatedAccounts, budgets: updatedBudgets });
+          updateStreakAndAchievementsInternal(set, get, nextTxs);
+          return;
+        }
+
+        console.log("TRANSACTION INSERT");
+
+        const tempId = crypto.randomUUID();
+        const optimistic: Transaction = { ...tx, id: tempId };
+
+        const txSnapshot = get().transactions;
+        const accSnapshot = get().accounts;
+        const bgtSnapshot = get().budgets;
+
         const updatedAccounts = get().accounts.map(acc => {
           if (acc.id === tx.accountId) {
             const balanceDiff = tx.type === 'income' ? tx.amount : -tx.amount;
@@ -395,29 +475,60 @@ export const useFinanceStore = create<FinanceState>()(
           }
           return acc;
         });
-
-        // Update budget spent
         const updatedBudgets = get().budgets.map(b => {
           if (tx.type === 'expense' && b.category.toLowerCase() === tx.category.toLowerCase()) {
             return { ...b, spent: Number((b.spent + tx.amount).toFixed(2)) };
           }
           return b;
         });
-
-        const nextTxs = [newTx, ...get().transactions];
-        set(state => ({
-          transactions: nextTxs,
-          accounts: updatedAccounts,
-          budgets: updatedBudgets
-        }));
+        const nextTxs = [optimistic, ...txSnapshot];
+        set({ transactions: nextTxs, accounts: updatedAccounts, budgets: updatedBudgets });
         updateStreakAndAchievementsInternal(set, get, nextTxs);
+
+        try {
+          const row = await transactionRepo.createTransaction(userId, {
+            vault_id: tx.accountId,
+            payment_method_id: tx.paymentMethodId ?? null,
+            transaction_time: tx.date,
+            amount: tx.amount,
+            transaction_type: tx.type,
+            description: tx.description,
+            category: tx.category,
+          });
+          console.log("SUPABASE TRANSACTION:", row);
+          set(s => ({
+            transactions: s.transactions.map(t =>
+              t.id === tempId
+                ? {
+                    id: row.id,
+                    date: row.transaction_time.split('T')[0],
+                    amount: row.amount,
+                    description: row.description,
+                    category: row.category,
+                    type: row.transaction_type as 'income' | 'expense',
+                    accountId: row.vault_id,
+                    paymentMethodId: row.payment_method_id ?? undefined,
+                  }
+                : t
+            ),
+          }));
+        } catch (e) {
+          set({ transactions: txSnapshot, accounts: accSnapshot, budgets: bgtSnapshot });
+          updateStreakAndAchievementsInternal(set, get, txSnapshot);
+          throw e;
+        }
       },
 
-      deleteTransaction: (id) => {
+      deleteTransaction: async (id) => {
         const tx = get().transactions.find(t => t.id === id);
         if (!tx) return;
 
-        // Revert account balance
+        console.log("TRANSACTION DELETE");
+
+        const txSnapshot = get().transactions;
+        const accSnapshot = get().accounts;
+        const bgtSnapshot = get().budgets;
+
         const updatedAccounts = get().accounts.map(acc => {
           if (acc.id === tx.accountId) {
             const balanceDiff = tx.type === 'income' ? -tx.amount : tx.amount;
@@ -425,29 +536,35 @@ export const useFinanceStore = create<FinanceState>()(
           }
           return acc;
         });
-
-        // Revert budget spent
         const updatedBudgets = get().budgets.map(b => {
           if (tx.type === 'expense' && b.category.toLowerCase() === tx.category.toLowerCase()) {
             return { ...b, spent: Number(Math.max(0, b.spent - tx.amount).toFixed(2)) };
           }
           return b;
         });
-
-        const nextTxs = get().transactions.filter(t => t.id !== id);
-        set(state => ({
-          transactions: nextTxs,
-          accounts: updatedAccounts,
-          budgets: updatedBudgets
-        }));
+        const nextTxs = txSnapshot.filter(t => t.id !== id);
+        set({ transactions: nextTxs, accounts: updatedAccounts, budgets: updatedBudgets });
         updateStreakAndAchievementsInternal(set, get, nextTxs);
+
+        try {
+          await transactionRepo.deleteTransaction(id);
+        } catch (e) {
+          set({ transactions: txSnapshot, accounts: accSnapshot, budgets: bgtSnapshot });
+          updateStreakAndAchievementsInternal(set, get, txSnapshot);
+          throw e;
+        }
       },
 
-      updateTransaction: (updatedTx) => {
+      updateTransaction: async (updatedTx) => {
         const oldTx = get().transactions.find(t => t.id === updatedTx.id);
         if (!oldTx) return;
 
-        // Revert old transaction effects on accounts and budgets
+        console.log("TRANSACTION UPDATE");
+
+        const txSnapshot = get().transactions;
+        const accSnapshot = get().accounts;
+        const bgtSnapshot = get().budgets;
+
         let accounts = get().accounts.map(acc => {
           if (acc.id === oldTx.accountId) {
             const balanceDiff = oldTx.type === 'income' ? -oldTx.amount : oldTx.amount;
@@ -455,15 +572,12 @@ export const useFinanceStore = create<FinanceState>()(
           }
           return acc;
         });
-
         let budgets = get().budgets.map(b => {
           if (oldTx.type === 'expense' && b.category.toLowerCase() === oldTx.category.toLowerCase()) {
             return { ...b, spent: Number(Math.max(0, b.spent - oldTx.amount).toFixed(2)) };
           }
           return b;
         });
-
-        // Apply updated transaction effects on accounts and budgets
         accounts = accounts.map(acc => {
           if (acc.id === updatedTx.accountId) {
             const balanceDiff = updatedTx.type === 'income' ? updatedTx.amount : -updatedTx.amount;
@@ -471,21 +585,48 @@ export const useFinanceStore = create<FinanceState>()(
           }
           return acc;
         });
-
         budgets = budgets.map(b => {
           if (updatedTx.type === 'expense' && b.category.toLowerCase() === updatedTx.category.toLowerCase()) {
             return { ...b, spent: Number((b.spent + updatedTx.amount).toFixed(2)) };
           }
           return b;
         });
-
-        const nextTxs = get().transactions.map(t => t.id === updatedTx.id ? updatedTx : t);
-        set(state => ({
-          transactions: nextTxs,
-          accounts,
-          budgets
-        }));
+        const nextTxs = txSnapshot.map(t => t.id === updatedTx.id ? updatedTx : t);
+        set({ transactions: nextTxs, accounts, budgets });
         updateStreakAndAchievementsInternal(set, get, nextTxs);
+
+        try {
+          const row = await transactionRepo.updateTransaction(updatedTx.id, {
+            vault_id: updatedTx.accountId,
+            payment_method_id: updatedTx.paymentMethodId ?? null,
+            transaction_time: updatedTx.date,
+            amount: updatedTx.amount,
+            transaction_type: updatedTx.type,
+            description: updatedTx.description,
+            category: updatedTx.category,
+          });
+          console.log("SUPABASE TRANSACTION:", row);
+          set(s => ({
+            transactions: s.transactions.map(t =>
+              t.id === row.id
+                ? {
+                    id: row.id,
+                    date: row.transaction_time.split('T')[0],
+                    amount: row.amount,
+                    description: row.description,
+                    category: row.category,
+                    type: row.transaction_type as 'income' | 'expense',
+                    accountId: row.vault_id,
+                    paymentMethodId: row.payment_method_id ?? undefined,
+                  }
+                : t
+            ),
+          }));
+        } catch (e) {
+          set({ transactions: txSnapshot, accounts: accSnapshot, budgets: bgtSnapshot });
+          updateStreakAndAchievementsInternal(set, get, txSnapshot);
+          throw e;
+        }
       },
 
       addAccount: async (acc, userId) => {
@@ -561,114 +702,174 @@ export const useFinanceStore = create<FinanceState>()(
         }
       },
 
-      addBudget: (bgt) => {
-        const id = 'b-' + Math.random().toString(36).substring(2, 9);
-        set(state => ({
-          budgets: [...state.budgets, { ...bgt, id }]
-        }));
+      addBudget: async (bgt, userId) => {
+        if (!userId) {
+          const id = 'b-' + Math.random().toString(36).substring(2, 9);
+          set(s => ({ budgets: [...s.budgets, { ...bgt, id }] }));
+          return;
+        }
+        const tempId = crypto.randomUUID();
+        const optimistic: Budget = { ...bgt, id: tempId };
+        const snapshot = get().budgets;
+        set(s => ({ budgets: [...s.budgets, optimistic] }));
+        try {
+          const row = await budgetRepo.createBudget(userId, budgetToInsert(bgt));
+          set(s => ({
+            budgets: s.budgets.map(b => b.id === tempId ? budgetRowToBudget(row) : b)
+          }));
+        } catch (e) {
+          set({ budgets: snapshot });
+          throw e;
+        }
       },
 
-      updateBudget: (updatedBgt) => {
-        set(state => ({
-          budgets: state.budgets.map(b => b.id === updatedBgt.id ? updatedBgt : b)
+      updateBudget: async (updatedBgt) => {
+        const snapshot = get().budgets;
+        set(s => ({
+          budgets: s.budgets.map(b => b.id === updatedBgt.id ? updatedBgt : b)
         }));
+        try {
+          const row = await budgetRepo.updateBudget(updatedBgt.id, budgetToUpdate(updatedBgt));
+          set(s => ({
+            budgets: s.budgets.map(b => b.id === row.id ? budgetRowToBudget(row) : b)
+          }));
+        } catch (e) {
+          set({ budgets: snapshot });
+          throw e;
+        }
       },
 
-      deleteBudget: (id) => {
-        set(state => ({
-          budgets: state.budgets.filter(b => b.id !== id)
+      deleteBudget: async (id) => {
+        const snapshot = get().budgets;
+        set(s => ({
+          budgets: s.budgets.filter(b => b.id !== id)
         }));
+        try {
+          await budgetRepo.deleteBudget(id);
+        } catch (e) {
+          set({ budgets: snapshot });
+          throw e;
+        }
       },
 
-      addSubscription: (sub) => {
-        const id = 'sub-' + Math.random().toString(36).substring(2, 9);
-        const mappedSub = {
-          ...sub,
-          id,
-          // Sync new fields to old fields
-          name: sub.service_name || sub.name || '',
-          frequency: sub.billing_cycle || (sub.frequency === 'annual' ? 'yearly' : 'monthly'),
-          nextBillingDate: sub.renewal_date || sub.nextBillingDate || '',
-          accountId: sub.payment_account || sub.accountId || '',
-          isActive: sub.active ?? sub.isActive ?? true,
-          // Sync old fields to new fields
-          service_name: sub.service_name || sub.name || '',
-          billing_cycle: sub.billing_cycle || (sub.frequency === 'annual' ? 'yearly' : 'monthly'),
-          renewal_date: sub.renewal_date || sub.nextBillingDate || '',
-          payment_account: sub.payment_account || sub.accountId || '',
-          active: sub.active ?? sub.isActive ?? true,
-          auto_debit: sub.auto_debit ?? true,
-          icon: sub.icon || 'CreditCard',
-          color: sub.color || '#38BDF8'
-        };
-        set(state => ({
-          subscriptions: [...state.subscriptions, mappedSub]
-        }));
+      addSubscription: async (sub, userId) => {
+        if (!userId) {
+          const id = 'sub-' + Math.random().toString(36).substring(2, 9);
+          set(s => ({ subscriptions: [...s.subscriptions, { ...sub, id }] }));
+          return;
+        }
+        const tempId = crypto.randomUUID();
+        const optimistic: Subscription = { ...sub, id: tempId };
+        const snapshot = get().subscriptions;
+        set(s => ({ subscriptions: [...s.subscriptions, optimistic] }));
+        try {
+          const row = await subscriptionRepo.createSubscription(userId, subscriptionToInsert(sub));
+          set(s => ({
+            subscriptions: s.subscriptions.map(sub => sub.id === tempId ? subscriptionRowToSubscription(row) : sub)
+          }));
+        } catch (e) {
+          set({ subscriptions: snapshot });
+          throw e;
+        }
       },
 
-      updateSubscription: (updatedSub) => {
-        set(state => ({
-          subscriptions: state.subscriptions.map(s => {
-            if (s.id === updatedSub.id) {
-              return {
-                ...s,
-                ...updatedSub,
-                name: updatedSub.service_name || updatedSub.name || s.name,
-                frequency: updatedSub.billing_cycle || (updatedSub.frequency === 'annual' ? 'yearly' : 'monthly') || s.frequency,
-                nextBillingDate: updatedSub.renewal_date || updatedSub.nextBillingDate || s.nextBillingDate,
-                accountId: updatedSub.payment_account || updatedSub.accountId || s.accountId,
-                isActive: updatedSub.active ?? updatedSub.isActive ?? s.isActive,
-                service_name: updatedSub.service_name || updatedSub.name || s.service_name,
-                billing_cycle: updatedSub.billing_cycle || (updatedSub.frequency === 'annual' ? 'yearly' : 'monthly') || s.billing_cycle,
-                renewal_date: updatedSub.renewal_date || updatedSub.nextBillingDate || s.renewal_date,
-                payment_account: updatedSub.payment_account || updatedSub.accountId || s.payment_account,
-                active: updatedSub.active ?? updatedSub.isActive ?? s.active
-              };
-            }
-            return s;
-          })
+      updateSubscription: async (updatedSub) => {
+        const snapshot = get().subscriptions;
+        set(s => ({
+          subscriptions: s.subscriptions.map(sub => sub.id === updatedSub.id ? updatedSub : sub)
         }));
+        try {
+          const row = await subscriptionRepo.updateSubscription(updatedSub.id, subscriptionToUpdate(updatedSub));
+          set(s => ({
+            subscriptions: s.subscriptions.map(sub => sub.id === row.id ? subscriptionRowToSubscription(row) : sub)
+          }));
+        } catch (e) {
+          set({ subscriptions: snapshot });
+          throw e;
+        }
       },
 
-      deleteSubscription: (id) => {
-        set(state => ({
-          subscriptions: state.subscriptions.filter(s => s.id !== id)
+      deleteSubscription: async (id) => {
+        const snapshot = get().subscriptions;
+        set(s => ({
+          subscriptions: s.subscriptions.filter(sub => sub.id !== id)
         }));
+        try {
+          await subscriptionRepo.deleteSubscription(id);
+        } catch (e) {
+          set({ subscriptions: snapshot });
+          throw e;
+        }
       },
 
-      toggleSubscriptionActive: (id) => {
-        set(state => ({
-          subscriptions: state.subscriptions.map(s => {
-            if (s.id === id) {
-              const newActive = s.active !== undefined ? !s.active : !s.isActive;
-              return { 
-                ...s, 
-                isActive: newActive, 
-                active: newActive 
-              };
-            }
-            return s;
-          })
+      toggleSubscriptionActive: async (id) => {
+        const target = get().subscriptions.find(sub => sub.id === id);
+        if (!target) return;
+        const newActive = !target.active;
+        const updated = { ...target, active: newActive };
+        const snapshot = get().subscriptions;
+        set(s => ({
+          subscriptions: s.subscriptions.map(sub => sub.id === id ? updated : sub)
         }));
+        try {
+          const row = await subscriptionRepo.updateSubscription(id, { active: newActive });
+          set(s => ({
+            subscriptions: s.subscriptions.map(sub => sub.id === row.id ? subscriptionRowToSubscription(row) : sub)
+          }));
+        } catch (e) {
+          set({ subscriptions: snapshot });
+          throw e;
+        }
       },
 
-      addGoal: (goal) => {
-        const id = 'g-' + Math.random().toString(36).substring(2, 9);
-        set(state => ({
-          goals: [...state.goals, { ...goal, id }]
-        }));
+      addGoal: async (goal, userId) => {
+        if (!userId) {
+          const id = 'g-' + Math.random().toString(36).substring(2, 9);
+          set(s => ({ goals: [...s.goals, { ...goal, id }] }));
+          return;
+        }
+        const tempId = crypto.randomUUID();
+        const optimistic: Goal = { ...goal, id: tempId };
+        const snapshot = get().goals;
+        set(s => ({ goals: [...s.goals, optimistic] }));
+        try {
+          const row = await goalRepo.createGoal(userId, goalToInsert(goal));
+          set(s => ({
+            goals: s.goals.map(g => g.id === tempId ? goalRowToGoal(row) : g)
+          }));
+        } catch (e) {
+          set({ goals: snapshot });
+          throw e;
+        }
       },
 
-      updateGoal: (updatedGoal) => {
-        set(state => ({
-          goals: state.goals.map(g => g.id === updatedGoal.id ? updatedGoal : g)
+      updateGoal: async (updatedGoal) => {
+        const snapshot = get().goals;
+        set(s => ({
+          goals: s.goals.map(g => g.id === updatedGoal.id ? updatedGoal : g)
         }));
+        try {
+          const row = await goalRepo.updateGoal(updatedGoal.id, goalToUpdate(updatedGoal));
+          set(s => ({
+            goals: s.goals.map(g => g.id === row.id ? goalRowToGoal(row) : g)
+          }));
+        } catch (e) {
+          set({ goals: snapshot });
+          throw e;
+        }
       },
 
-      deleteGoal: (id) => {
-        set(state => ({
-          goals: state.goals.filter(g => g.id !== id)
+      deleteGoal: async (id) => {
+        const snapshot = get().goals;
+        set(s => ({
+          goals: s.goals.filter(g => g.id !== id)
         }));
+        try {
+          await goalRepo.deleteGoal(id);
+        } catch (e) {
+          set({ goals: snapshot });
+          throw e;
+        }
       },
 
       updatePreferences: (prefs) => {
@@ -677,35 +878,81 @@ export const useFinanceStore = create<FinanceState>()(
         }));
       },
 
-      unlockAchievement: (id) => {
-        set(state => ({
-          achievements: state.achievements.map(ach => 
-            ach.id === id ? { ...ach, isUnlocked: true, unlockedAt: new Date().toISOString().split('T')[0] } : ach
+      unlockAchievement: async (id, userId) => {
+        const ach = get().achievements.find(a => a.id === id);
+        if (!ach || ach.isUnlocked) return;
+
+        const today = new Date().toISOString().split('T')[0];
+        const snapshot = get().achievements;
+
+        set(s => ({
+          achievements: s.achievements.map(a =>
+            a.id === id ? { ...a, isUnlocked: true, unlockedAt: today } : a
           )
         }));
+
+        if (!userId) return;
+
+        try {
+          await achievementRepo.unlockAchievement(userId, id);
+        } catch (e) {
+          set({ achievements: snapshot });
+          throw e;
+        }
       },
 
       setInsights: (insights) => {
         set({ insights });
       },
 
-      addPaymentMethod: (pm) => {
-        const id = 'pm-' + Math.random().toString(36).substring(2, 9);
-        set(state => ({
-          paymentMethods: [...state.paymentMethods, { ...pm, id }]
-        }));
+      addPaymentMethod: async (pm, userId) => {
+        if (!userId) {
+          const id = 'pm-' + Math.random().toString(36).substring(2, 9);
+          set(s => ({ paymentMethods: [...s.paymentMethods, { ...pm, id }] }));
+          return;
+        }
+        const tempId = crypto.randomUUID();
+        const optimistic: PaymentMethod = { ...pm, id: tempId };
+        const snapshot = get().paymentMethods;
+        set(s => ({ paymentMethods: [...s.paymentMethods, optimistic] }));
+        try {
+          const row = await paymentMethodRepo.createPaymentMethod(userId, paymentMethodToInsert(pm));
+          set(s => ({
+            paymentMethods: s.paymentMethods.map(p => p.id === tempId ? paymentMethodRowToPaymentMethod(row) : p)
+          }));
+        } catch (e) {
+          set({ paymentMethods: snapshot });
+          throw e;
+        }
       },
 
-      deletePaymentMethod: (id) => {
-        set(state => ({
-          paymentMethods: state.paymentMethods.filter(p => p.id !== id)
+      deletePaymentMethod: async (id) => {
+        const snapshot = get().paymentMethods;
+        set(s => ({
+          paymentMethods: s.paymentMethods.filter(p => p.id !== id)
         }));
+        try {
+          await paymentMethodRepo.deletePaymentMethod(id);
+        } catch (e) {
+          set({ paymentMethods: snapshot });
+          throw e;
+        }
       },
 
-      updatePaymentMethod: (updatedPm) => {
-        set(state => ({
-          paymentMethods: state.paymentMethods.map(p => p.id === updatedPm.id ? updatedPm : p)
+      updatePaymentMethod: async (updatedPm) => {
+        const snapshot = get().paymentMethods;
+        set(s => ({
+          paymentMethods: s.paymentMethods.map(p => p.id === updatedPm.id ? updatedPm : p)
         }));
+        try {
+          const row = await paymentMethodRepo.updatePaymentMethod(updatedPm.id, paymentMethodToUpdate(updatedPm));
+          set(s => ({
+            paymentMethods: s.paymentMethods.map(p => p.id === row.id ? paymentMethodRowToPaymentMethod(row) : p)
+          }));
+        } catch (e) {
+          set({ paymentMethods: snapshot });
+          throw e;
+        }
       },
       
       recalculateStreak: () => {
@@ -715,7 +962,7 @@ export const useFinanceStore = create<FinanceState>()(
     {
       name: 'finance-os-storage',
       partialize: (state) => {
-        const { isVaultsHydrated, ...rest } = state;
+        const { isVaultsHydrated, isTransactionsHydrated, isPaymentMethodsHydrated, isGoalsHydrated, isSubscriptionsHydrated, isBudgetsHydrated, isAchievementsHydrated, ...rest } = state;
         return rest;
       },
     }
