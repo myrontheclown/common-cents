@@ -7,7 +7,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Account, Transaction, Budget, Subscription, Goal, Achievement, AIInsight, UserPreferences, PaymentMethod } from './types';
 import { VaultRepository } from './lib/db/repositories';
-import { TransactionRepository } from './lib/db/repositories/TransactionRepository';
+import { TransactionRepository, TransactionRow } from './lib/db/repositories/TransactionRepository';
+import { applyTransactionToAccounts, applyTransactionToBudgets } from './lib/financialHelpers';
 import { PaymentMethodRepository } from './lib/db/repositories/PaymentMethodRepository';
 import { GoalRepository } from './lib/db/repositories/GoalRepository';
 import { SubscriptionRepository } from './lib/db/repositories/SubscriptionRepository';
@@ -440,26 +441,13 @@ export const useFinanceStore = create<FinanceState>()(
         if (!userId) {
           const id = 't-' + Math.random().toString(36).substring(2, 9);
           const newTx: Transaction = { ...tx, id };
-          const updatedAccounts = get().accounts.map(acc => {
-            if (acc.id === tx.accountId) {
-              const balanceDiff = tx.type === 'income' ? tx.amount : -tx.amount;
-              return { ...acc, balance: Number((acc.balance + balanceDiff).toFixed(2)) };
-            }
-            return acc;
-          });
-          const updatedBudgets = get().budgets.map(b => {
-            if (tx.type === 'expense' && b.category.toLowerCase() === tx.category.toLowerCase()) {
-              return { ...b, spent: Number((b.spent + tx.amount).toFixed(2)) };
-            }
-            return b;
-          });
+          const updatedAccounts = applyTransactionToAccounts(get().accounts, tx, 1);
+          const updatedBudgets = applyTransactionToBudgets(get().budgets, tx, 1);
           const nextTxs = [newTx, ...get().transactions];
           set({ transactions: nextTxs, accounts: updatedAccounts, budgets: updatedBudgets });
           updateStreakAndAchievementsInternal(set, get, nextTxs);
           return;
         }
-
-        console.log("TRANSACTION INSERT");
 
         const tempId = crypto.randomUUID();
         const optimistic: Transaction = { ...tx, id: tempId };
@@ -468,22 +456,15 @@ export const useFinanceStore = create<FinanceState>()(
         const accSnapshot = get().accounts;
         const bgtSnapshot = get().budgets;
 
-        const updatedAccounts = get().accounts.map(acc => {
-          if (acc.id === tx.accountId) {
-            const balanceDiff = tx.type === 'income' ? tx.amount : -tx.amount;
-            return { ...acc, balance: Number((acc.balance + balanceDiff).toFixed(2)) };
-          }
-          return acc;
-        });
-        const updatedBudgets = get().budgets.map(b => {
-          if (tx.type === 'expense' && b.category.toLowerCase() === tx.category.toLowerCase()) {
-            return { ...b, spent: Number((b.spent + tx.amount).toFixed(2)) };
-          }
-          return b;
-        });
+        const updatedAccounts = applyTransactionToAccounts(get().accounts, tx, 1);
+        const updatedBudgets = applyTransactionToBudgets(get().budgets, tx, 1);
         const nextTxs = [optimistic, ...txSnapshot];
         set({ transactions: nextTxs, accounts: updatedAccounts, budgets: updatedBudgets });
         updateStreakAndAchievementsInternal(set, get, nextTxs);
+
+        let createdRow: TransactionRow | null = null;
+        let vaultUpdated = false;
+        let budgetUpdated = false;
 
         try {
           const row = await transactionRepo.createTransaction(userId, {
@@ -495,7 +476,22 @@ export const useFinanceStore = create<FinanceState>()(
             description: tx.description,
             category: tx.category,
           });
-          console.log("SUPABASE TRANSACTION:", row);
+          createdRow = row;
+
+          const currentAccount = get().accounts.find(a => a.id === tx.accountId)!;
+          await vaultRepo.updateVault(tx.accountId, { balance: currentAccount.balance });
+          vaultUpdated = true;
+
+          if (tx.type === 'expense') {
+            const currentBudget = get().budgets.find(b =>
+              b.category.toLowerCase() === tx.category.toLowerCase()
+            );
+            if (currentBudget) {
+              await budgetRepo.updateBudget(currentBudget.id, { spent: currentBudget.spent });
+              budgetUpdated = true;
+            }
+          }
+
           set(s => ({
             transactions: s.transactions.map(t =>
               t.id === tempId
@@ -513,6 +509,28 @@ export const useFinanceStore = create<FinanceState>()(
             ),
           }));
         } catch (e) {
+          if (budgetUpdated) {
+            try {
+              const oldBudget = bgtSnapshot.find(b =>
+                b.category.toLowerCase() === tx.category.toLowerCase()
+              );
+              if (oldBudget) {
+                await budgetRepo.updateBudget(oldBudget.id, { spent: oldBudget.spent });
+              }
+            } catch {}
+          }
+          if (vaultUpdated) {
+            try {
+              const oldAccount = accSnapshot.find(a => a.id === tx.accountId)!;
+              await vaultRepo.updateVault(tx.accountId, { balance: oldAccount.balance });
+            } catch {}
+          }
+          if (createdRow) {
+            try {
+              await transactionRepo.deleteTransaction(createdRow.id);
+            } catch {}
+          }
+
           set({ transactions: txSnapshot, accounts: accSnapshot, budgets: bgtSnapshot });
           updateStreakAndAchievementsInternal(set, get, txSnapshot);
           throw e;
@@ -523,32 +541,53 @@ export const useFinanceStore = create<FinanceState>()(
         const tx = get().transactions.find(t => t.id === id);
         if (!tx) return;
 
-        console.log("TRANSACTION DELETE");
-
         const txSnapshot = get().transactions;
         const accSnapshot = get().accounts;
         const bgtSnapshot = get().budgets;
 
-        const updatedAccounts = get().accounts.map(acc => {
-          if (acc.id === tx.accountId) {
-            const balanceDiff = tx.type === 'income' ? -tx.amount : tx.amount;
-            return { ...acc, balance: Number((acc.balance + balanceDiff).toFixed(2)) };
-          }
-          return acc;
-        });
-        const updatedBudgets = get().budgets.map(b => {
-          if (tx.type === 'expense' && b.category.toLowerCase() === tx.category.toLowerCase()) {
-            return { ...b, spent: Number(Math.max(0, b.spent - tx.amount).toFixed(2)) };
-          }
-          return b;
-        });
+        const updatedAccounts = applyTransactionToAccounts(get().accounts, tx, -1);
+        const updatedBudgets = applyTransactionToBudgets(get().budgets, tx, -1);
         const nextTxs = txSnapshot.filter(t => t.id !== id);
         set({ transactions: nextTxs, accounts: updatedAccounts, budgets: updatedBudgets });
         updateStreakAndAchievementsInternal(set, get, nextTxs);
 
+        let vaultUpdated = false;
+        let budgetUpdated = false;
+
         try {
           await transactionRepo.deleteTransaction(id);
+
+          const currentAccount = get().accounts.find(a => a.id === tx.accountId)!;
+          await vaultRepo.updateVault(tx.accountId, { balance: currentAccount.balance });
+          vaultUpdated = true;
+
+          if (tx.type === 'expense') {
+            const currentBudget = get().budgets.find(b =>
+              b.category.toLowerCase() === tx.category.toLowerCase()
+            );
+            if (currentBudget) {
+              await budgetRepo.updateBudget(currentBudget.id, { spent: currentBudget.spent });
+              budgetUpdated = true;
+            }
+          }
         } catch (e) {
+          if (budgetUpdated) {
+            try {
+              const oldBudget = bgtSnapshot.find(b =>
+                b.category.toLowerCase() === tx.category.toLowerCase()
+              );
+              if (oldBudget) {
+                await budgetRepo.updateBudget(oldBudget.id, { spent: oldBudget.spent });
+              }
+            } catch {}
+          }
+          if (vaultUpdated) {
+            try {
+              const oldAccount = accSnapshot.find(a => a.id === tx.accountId)!;
+              await vaultRepo.updateVault(tx.accountId, { balance: oldAccount.balance });
+            } catch {}
+          }
+
           set({ transactions: txSnapshot, accounts: accSnapshot, budgets: bgtSnapshot });
           updateStreakAndAchievementsInternal(set, get, txSnapshot);
           throw e;
@@ -559,41 +598,38 @@ export const useFinanceStore = create<FinanceState>()(
         const oldTx = get().transactions.find(t => t.id === updatedTx.id);
         if (!oldTx) return;
 
-        console.log("TRANSACTION UPDATE");
-
         const txSnapshot = get().transactions;
         const accSnapshot = get().accounts;
         const bgtSnapshot = get().budgets;
 
-        let accounts = get().accounts.map(acc => {
-          if (acc.id === oldTx.accountId) {
-            const balanceDiff = oldTx.type === 'income' ? -oldTx.amount : oldTx.amount;
-            return { ...acc, balance: Number((acc.balance + balanceDiff).toFixed(2)) };
-          }
-          return acc;
-        });
-        let budgets = get().budgets.map(b => {
-          if (oldTx.type === 'expense' && b.category.toLowerCase() === oldTx.category.toLowerCase()) {
-            return { ...b, spent: Number(Math.max(0, b.spent - oldTx.amount).toFixed(2)) };
-          }
-          return b;
-        });
-        accounts = accounts.map(acc => {
-          if (acc.id === updatedTx.accountId) {
-            const balanceDiff = updatedTx.type === 'income' ? updatedTx.amount : -updatedTx.amount;
-            return { ...acc, balance: Number((acc.balance + balanceDiff).toFixed(2)) };
-          }
-          return acc;
-        });
-        budgets = budgets.map(b => {
-          if (updatedTx.type === 'expense' && b.category.toLowerCase() === updatedTx.category.toLowerCase()) {
-            return { ...b, spent: Number((b.spent + updatedTx.amount).toFixed(2)) };
-          }
-          return b;
-        });
+        let accounts = applyTransactionToAccounts(get().accounts, oldTx, -1);
+        accounts = applyTransactionToAccounts(accounts, updatedTx, 1);
+        let budgets = applyTransactionToBudgets(get().budgets, oldTx, -1);
+        budgets = applyTransactionToBudgets(budgets, updatedTx, 1);
         const nextTxs = txSnapshot.map(t => t.id === updatedTx.id ? updatedTx : t);
         set({ transactions: nextTxs, accounts, budgets });
         updateStreakAndAchievementsInternal(set, get, nextTxs);
+
+        const vaultIdsToUpdate = new Set([oldTx.accountId]);
+        if (updatedTx.accountId !== oldTx.accountId) {
+          vaultIdsToUpdate.add(updatedTx.accountId);
+        }
+
+        const budgetIdsToUpdate = new Map<string, string>();
+        if (oldTx.type === 'expense') {
+          const oldBudget = bgtSnapshot.find(b => b.category.toLowerCase() === oldTx.category.toLowerCase());
+          if (oldBudget) budgetIdsToUpdate.set(oldBudget.id, oldBudget.category);
+        }
+        if (updatedTx.type === 'expense') {
+          const newBudget = bgtSnapshot.find(b => b.category.toLowerCase() === updatedTx.category.toLowerCase());
+          if (newBudget && !budgetIdsToUpdate.has(newBudget.id)) {
+            budgetIdsToUpdate.set(newBudget.id, newBudget.category);
+          }
+        }
+
+        let transactionUpdated = false;
+        const updatedVaults: string[] = [];
+        const updatedBudgets: string[] = [];
 
         try {
           const row = await transactionRepo.updateTransaction(updatedTx.id, {
@@ -605,7 +641,20 @@ export const useFinanceStore = create<FinanceState>()(
             description: updatedTx.description,
             category: updatedTx.category,
           });
-          console.log("SUPABASE TRANSACTION:", row);
+          transactionUpdated = true;
+
+          for (const vaultId of vaultIdsToUpdate) {
+            const currentAccount = get().accounts.find(a => a.id === vaultId)!;
+            await vaultRepo.updateVault(vaultId, { balance: currentAccount.balance });
+            updatedVaults.push(vaultId);
+          }
+
+          for (const [budgetId] of budgetIdsToUpdate) {
+            const currentBudget = get().budgets.find(b => b.id === budgetId)!;
+            await budgetRepo.updateBudget(budgetId, { spent: currentBudget.spent });
+            updatedBudgets.push(budgetId);
+          }
+
           set(s => ({
             transactions: s.transactions.map(t =>
               t.id === row.id
@@ -623,6 +672,32 @@ export const useFinanceStore = create<FinanceState>()(
             ),
           }));
         } catch (e) {
+          for (const budgetId of [...updatedBudgets].reverse()) {
+            try {
+              const oldBudget = bgtSnapshot.find(b => b.id === budgetId)!;
+              await budgetRepo.updateBudget(budgetId, { spent: oldBudget.spent });
+            } catch {}
+          }
+          for (const vaultId of [...updatedVaults].reverse()) {
+            try {
+              const oldAccount = accSnapshot.find(a => a.id === vaultId)!;
+              await vaultRepo.updateVault(vaultId, { balance: oldAccount.balance });
+            } catch {}
+          }
+          if (transactionUpdated) {
+            try {
+              await transactionRepo.updateTransaction(updatedTx.id, {
+                vault_id: oldTx.accountId,
+                payment_method_id: oldTx.paymentMethodId ?? null,
+                transaction_time: oldTx.date,
+                amount: oldTx.amount,
+                transaction_type: oldTx.type,
+                description: oldTx.description,
+                category: oldTx.category,
+              });
+            } catch {}
+          }
+
           set({ transactions: txSnapshot, accounts: accSnapshot, budgets: bgtSnapshot });
           updateStreakAndAchievementsInternal(set, get, txSnapshot);
           throw e;
