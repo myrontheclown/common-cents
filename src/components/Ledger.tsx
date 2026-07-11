@@ -18,7 +18,8 @@ import {
   X,
   Play,
   Pause,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
@@ -33,6 +34,7 @@ export default function Ledger() {
     paymentMethods,
     deleteTransaction,
     addTransaction,
+    updateTransaction,
     toggleSubscriptionActive,
     deleteSubscription
   } = useFinanceStore();
@@ -56,6 +58,31 @@ export default function Ledger() {
   const [newAccId, setNewAccId] = useState(accounts[0]?.id || 'bank-1');
   const [newPmId, setNewPmId] = useState('');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+
+  const openEditModal = (tx: Transaction) => {
+    setEditingTx(tx);
+    setNewDesc(tx.description);
+    setNewAmount(tx.amount.toString());
+    setNewType(tx.type);
+    setNewCat(tx.type === 'expense' ? tx.category : 'Food & Dining');
+    setNewAccId(tx.accountId);
+    setNewPmId(tx.paymentMethodId || '');
+    setNewDate(tx.date);
+    setIsModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingTx(null);
+    setNewDesc('');
+    setNewAmount('');
+    setNewPmId('');
+    setNewDate(new Date().toISOString().split('T')[0]);
+    setNewType('expense');
+    setNewCat('Food & Dining');
+    setNewAccId(accounts[0]?.id || 'bank-1');
+    setIsModalOpen(false);
+  };
 
   // Unique categories derived from transactions + defaults
   const categories = Array.from(new Set([
@@ -99,7 +126,7 @@ export default function Ledger() {
     e.preventDefault();
     if (!newDesc || !newAmount || isNaN(Number(newAmount))) return;
 
-    addTransaction({
+    const txData = {
       description: newDesc,
       amount: parseFloat(parseFloat(newAmount).toFixed(2)),
       category: newType === 'income' ? 'Income' : newCat,
@@ -107,13 +134,15 @@ export default function Ledger() {
       accountId: newAccId,
       paymentMethodId: newPmId || undefined,
       date: newDate
-    }, auth.userId ?? undefined);
+    };
 
-    // Reset and close
-    setNewDesc('');
-    setNewAmount('');
-    setNewPmId('');
-    setIsModalOpen(false);
+    if (editingTx) {
+      updateTransaction({ ...txData, id: editingTx.id });
+    } else {
+      addTransaction(txData, auth.userId ?? undefined);
+    }
+
+    resetForm();
   };
 
   return (
@@ -278,7 +307,15 @@ export default function Ledger() {
                     </td>
 
                     {/* ACTIONS */}
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => openEditModal(t)}
+                        className="p-1.5 bg-[#FFDE4D] border border-black hover:bg-yellow-400 active:translate-y-[1px] transition-all"
+                        title="Edit record"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <Pencil className="w-4 h-4 text-black" />
+                      </button>
                       <button
                         onClick={() => deleteTransaction(t.id)}
                         className="p-1.5 bg-[#FF9F9F] border border-black hover:bg-red-400 active:translate-y-[1px] transition-all"
@@ -372,7 +409,7 @@ export default function Ledger() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div className="bg-[#FAF6F0] border-4 border-black p-6 w-full max-w-md shadow-[8px_8px_0px_rgba(0,0,0,1)] relative">
             <button 
-              onClick={() => setIsModalOpen(false)}
+              onClick={resetForm}
               className="absolute top-4 right-4 bg-white border-2 border-black p-1 hover:bg-gray-100 active:translate-y-[1px]"
               style={{ cursor: 'pointer' }}
             >
@@ -380,7 +417,7 @@ export default function Ledger() {
             </button>
 
             <h3 className="font-display text-lg font-bold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider">
-              TRANSMIT LEDGER RECORD
+              {editingTx ? 'EDIT TRANSACTION' : 'TRANSMIT LEDGER RECORD'}
             </h3>
 
             <form onSubmit={handleModalSubmit} className="flex flex-col gap-3">
@@ -519,7 +556,7 @@ export default function Ledger() {
                 className="w-full bg-[#FFDE4D] text-black font-display text-xs font-bold py-2.5 border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all mt-4"
                 style={{ cursor: 'pointer' }}
               >
-                TRANSMIT LEDGER RECORD
+                {editingTx ? 'UPDATE LEDGER RECORD' : 'TRANSMIT LEDGER RECORD'}
               </button>
             </form>
           </div>
