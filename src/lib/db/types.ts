@@ -73,7 +73,6 @@ export function accountToVaultUpdate(account: Account): VaultUpdate {
   return {
     display_name: account.name,
     type: account.type,
-    balance: account.balance,
     color: account.color,
     icon: account.icon,
   };

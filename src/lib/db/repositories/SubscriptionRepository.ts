@@ -11,6 +11,7 @@ export interface SubscriptionRow {
   renewal_date: string;
   category: string | null;
   active: boolean;
+  color: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +24,7 @@ export interface SubscriptionInsert {
   vault_id?: string | null;
   category?: string | null;
   active?: boolean;
+  color?: string | null;
 }
 
 export interface SubscriptionUpdate {
@@ -33,6 +35,7 @@ export interface SubscriptionUpdate {
   vault_id?: string | null;
   category?: string | null;
   active?: boolean;
+  color?: string | null;
 }
 
 export class SubscriptionRepository {

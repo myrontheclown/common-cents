@@ -5,6 +5,8 @@ import type {
   SubscriptionUpdate,
 } from './repositories/SubscriptionRepository';
 
+const FALLBACK_COLOR = '#38BDF8';
+
 export function subscriptionRowToSubscription(row: SubscriptionRow): Subscription {
   return {
     id: row.id,
@@ -17,7 +19,7 @@ export function subscriptionRowToSubscription(row: SubscriptionRow): Subscriptio
     auto_debit: true,
     active: row.active,
     icon: 'CreditCard',
-    color: '#38BDF8',
+    color: row.color ?? FALLBACK_COLOR,
   };
 }
 
@@ -32,6 +34,7 @@ export function subscriptionToInsert(
     vault_id: sub.payment_account || null,
     category: sub.category || null,
     active: sub.active,
+    color: sub.color || null,
   };
 }
 
@@ -46,5 +49,6 @@ export function subscriptionToUpdate(
     vault_id: sub.payment_account || null,
     category: sub.category || null,
     active: sub.active,
+    color: sub.color || null,
   };
 }

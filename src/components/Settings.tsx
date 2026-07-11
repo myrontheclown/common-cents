@@ -25,10 +25,15 @@ import {
   X
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
-import type { Budget, PaymentMethod } from '../types';
+import type { Account, Budget, PaymentMethod } from '../types';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
 
-export default function Settings() {
+interface SettingsProps {
+  pendingVaultEdit: Account | null;
+  onClearPendingVaultEdit: () => void;
+}
+
+export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: SettingsProps) {
   const auth = useAuthContext();
   const { 
     preferences, 
@@ -38,6 +43,7 @@ export default function Settings() {
     budgets,
     updatePreferences, 
     addAccount,
+    updateAccount,
     addPaymentMethod,
     deletePaymentMethod,
     updatePaymentMethod,
@@ -57,6 +63,7 @@ export default function Settings() {
   const [reminderTime, setReminderTime] = useState(preferences.reminderTime ?? '21:30');
 
   // Account creation form states
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<'bank' | 'cash' | 'investment' | 'credit' | 'asset' | 'liability'>('bank');
   const [newAccBalance, setNewAccBalance] = useState('');
@@ -109,6 +116,21 @@ export default function Settings() {
 
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (editingAccount) {
+      if (!newAccName) return;
+      await updateAccount({
+        ...editingAccount,
+        name: newAccName,
+        type: newAccType,
+        color: newAccColor,
+        icon: newAccIcon,
+      });
+      triggerNotification(`VAULT "${newAccName.toUpperCase()}" UPDATED SUCCESSFULLY.`);
+      resetAccountForm();
+      return;
+    }
+
     if (!newAccName || !newAccBalance || isNaN(Number(newAccBalance))) return;
 
     if (!auth.userId) {
@@ -127,8 +149,7 @@ export default function Settings() {
       auth.userId
     );
 
-    setNewAccName('');
-    setNewAccBalance('');
+    resetAccountForm();
     triggerNotification(`NEW VAULT "${newAccName.toUpperCase()}" ADDED TO COMMON CENTS INDEX.`);
   };
 
@@ -184,6 +205,28 @@ export default function Settings() {
     setNewPmColor('#C084FC');
     setNewPmIcon('Smartphone');
   };
+
+  const resetAccountForm = () => {
+    setEditingAccount(null);
+    setNewAccName('');
+    setNewAccBalance('');
+    setNewAccType('bank');
+    setNewAccColor('#38BDF8');
+    setNewAccIcon('Landmark');
+  };
+
+  React.useEffect(() => {
+    if (!pendingVaultEdit) return;
+    const acc = pendingVaultEdit;
+    setEditingAccount(acc);
+    setNewAccName(acc.name);
+    setNewAccType(acc.type);
+    setNewAccColor(acc.color);
+    setNewAccIcon(acc.icon);
+    setNewAccBalance('');
+    onClearPendingVaultEdit();
+    (document.getElementById('settings-shell') as HTMLElement)?.scrollIntoView({ behavior: 'smooth' });
+  }, [pendingVaultEdit]);
 
   const budgetCategories = [
     'Food & Dining',
@@ -291,7 +334,7 @@ export default function Settings() {
   };
 
   return (
-    <><div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <><div id="settings-shell" className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       {/* HEADER SECTION */}
       <div className="lg:col-span-12 flex flex-col gap-4 border-b-4 border-black pb-4 mb-2">
@@ -422,11 +465,14 @@ export default function Settings() {
           </form>
         </div>
 
-        {/* VAULT MOUNT BOARD (ADD ACCOUNTS) */}
+        {/* VAULT MOUNT BOARD (ADD/EDIT ACCOUNTS) */}
         <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
           <h3 className="font-display text-base font-bold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
-            <Plus className="w-4 h-4 text-black" />
-            MOUNT NEW VAULT INDEX
+            {editingAccount ? <Edit3 className="w-4 h-4 text-black" /> : <Plus className="w-4 h-4 text-black" />}
+            {editingAccount ? 'EDIT VAULT INDEX' : 'MOUNT NEW VAULT INDEX'}
+            {editingAccount && (
+              <span className="ml-auto font-mono text-[9px] bg-black text-white px-2 py-0.5">EDITING: {editingAccount.name.toUpperCase()}</span>
+            )}
           </h3>
 
           <form onSubmit={handleAccountSubmit} className="flex flex-col gap-4">
@@ -443,18 +489,27 @@ export default function Settings() {
                 />
               </div>
 
-              <div>
-                <label className="font-mono text-[10px] font-bold text-black block mb-1">OPENING BALANCE (₹)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={newAccBalance}
-                  onChange={(e) => setNewAccBalance(e.target.value)}
-                  className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-yellow-50"
-                  required
-                />
-              </div>
+              {editingAccount ? (
+                <div>
+                  <label className="font-mono text-[10px] font-bold text-black block mb-1">CURRENT BALANCE (₹)</label>
+                  <div className="w-full bg-gray-100 border-2 border-black p-2 font-mono text-xs text-gray-600 flex items-center h-[38px]">
+                    Balance is derived from transactions and cannot be edited directly.
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="font-mono text-[10px] font-bold text-black block mb-1">OPENING BALANCE (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={newAccBalance}
+                    onChange={(e) => setNewAccBalance(e.target.value)}
+                    className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-yellow-50"
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -505,13 +560,25 @@ export default function Settings() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="bg-[#A5F3FC] text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-[#83ebfa] self-start"
-              style={{ cursor: 'pointer' }}
-            >
-              MOUNT SYSTEM VAULT
-            </button>
+            <div className="flex items-center gap-3 self-start">
+              {editingAccount && (
+                <button
+                  type="button"
+                  onClick={resetAccountForm}
+                  className="bg-white text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-gray-100"
+                  style={{ cursor: 'pointer' }}
+                >
+                  CANCEL
+                </button>
+              )}
+              <button
+                type="submit"
+                className="bg-[#A5F3FC] text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-[#83ebfa] self-start"
+                style={{ cursor: 'pointer' }}
+              >
+                {editingAccount ? 'SAVE VAULT' : 'MOUNT SYSTEM VAULT'}
+              </button>
+            </div>
           </form>
         </div>
 

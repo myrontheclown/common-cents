@@ -21,6 +21,7 @@ import { SubscriptionRepository } from './lib/db/repositories/SubscriptionReposi
 import { BudgetRepository } from './lib/db/repositories/BudgetRepository';
 import { AchievementRepository } from './lib/db/repositories/AchievementRepository';
 import { vaultRowToAccount } from './lib/db/types';
+import { Account } from './types';
 import { transactionRowToTransaction } from './lib/db/transactionTypes';
 import { paymentMethodRowToPaymentMethod } from './lib/db/paymentMethodTypes';
 import { goalRowToGoal } from './lib/db/goalTypes';
@@ -39,6 +40,7 @@ const achievementRepo = new AchievementRepository();
 export default function App() {
   const auth = useAuthContext();
   const [activeTab, setActiveTab] = useState<string>('command_center');
+  const [pendingVaultEdit, setPendingVaultEdit] = useState<Account | null>(null);
   const { preferences, transactions, recalculateStreak, isVaultsHydrated, setAccounts, setVaultsHydrated, isTransactionsHydrated, setTransactions, setTransactionsHydrated, isPaymentMethodsHydrated, setPaymentMethods, setPaymentMethodsHydrated, isGoalsHydrated, setGoals, setGoalsHydrated, isSubscriptionsHydrated, setSubscriptions, setSubscriptionsHydrated, isBudgetsHydrated, setBudgets, setBudgetsHydrated, isAchievementsHydrated, setAchievements, setAchievementsHydrated } = useFinanceStore();
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [lastNotificationDate, setLastNotificationDate] = useState<string>('');
@@ -275,6 +277,17 @@ export default function App() {
     return () => window.removeEventListener('trigger-test-reminder', handleTestReminder);
   }, []);
 
+  // Listen for vault edit requests (dispatched from Command Center vault cards)
+  useEffect(() => {
+    const handleEditVault = (e: Event) => {
+      const acc = (e as CustomEvent).detail as Account;
+      setPendingVaultEdit(acc);
+      setActiveTab('settings');
+    };
+    window.addEventListener('open-edit-vault', handleEditVault);
+    return () => window.removeEventListener('open-edit-vault', handleEditVault);
+  }, []);
+
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'command_center':
@@ -286,7 +299,7 @@ export default function App() {
       case 'wrapped':
         return <Wrapped />;
       case 'settings':
-        return <Settings />;
+        return <Settings pendingVaultEdit={pendingVaultEdit} onClearPendingVaultEdit={() => setPendingVaultEdit(null)} />;
       default:
         return <CommandCenter onNavigateToLedger={() => setActiveTab('ledger')} />;
     }

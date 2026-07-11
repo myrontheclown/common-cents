@@ -354,49 +354,116 @@ export default function Ledger() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {subscriptions.map((sub) => {
-            const acc = accounts.find(a => a.id === sub.accountId);
+            const acc = accounts.find(a => a.id === (sub.payment_account || sub.accountId));
+            const svcName = sub.service_name || sub.name || '';
+            const amount = sub.amount;
+            const cycle = sub.billing_cycle || sub.frequency || 'monthly';
+            const renewalDate = sub.renewal_date || sub.nextBillingDate || '';
+            const isActive = sub.active ?? sub.isActive ?? true;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const renewal = new Date(renewalDate);
+            renewal.setHours(0, 0, 0, 0);
+            const diffTime = renewal.getTime() - today.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            let renewalLabel: string;
+            let renewalColor: string;
+            let renewalBg: string;
+            if (diffDays < 0) {
+              renewalLabel = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
+              renewalColor = 'text-red-600';
+              renewalBg = 'bg-red-100';
+            } else if (diffDays === 0) {
+              renewalLabel = 'Renews Today';
+              renewalColor = 'text-orange-600';
+              renewalBg = 'bg-orange-100';
+            } else if (diffDays === 1) {
+              renewalLabel = 'Renews Tomorrow';
+              renewalColor = 'text-orange-600';
+              renewalBg = 'bg-orange-100';
+            } else if (diffDays <= 7) {
+              renewalLabel = `⚠ Renews in ${diffDays} days`;
+              renewalColor = 'text-amber-600';
+              renewalBg = 'bg-amber-100';
+            } else {
+              renewalLabel = `Renews in ${diffDays} days`;
+              renewalColor = 'text-green-600';
+              renewalBg = 'bg-green-100';
+            }
+
             return (
-              <div 
-                key={sub.id} 
-                className={`border-2 border-black p-4 flex items-center justify-between shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all ${
-                  sub.isActive ? 'bg-[#FFE2E2]' : 'bg-gray-100 opacity-60'
+              <div
+                key={sub.id}
+                className={`border-2 border-black p-4 shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all ${
+                  isActive ? 'bg-white' : 'bg-gray-100 opacity-60'
                 }`}
               >
-                <div>
-                  <h4 className="font-display text-sm font-bold text-black flex items-center gap-1.5">
-                    {sub.name}
-                    {!sub.isActive && (
-                      <span className="font-mono text-[8px] bg-black text-white px-1 py-0.2">
-                        PAUSED
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-display text-sm font-bold text-black">
+                      {svcName}
+                    </h4>
+                    {isActive ? (
+                      <span className="font-mono text-[8px] bg-[#4ADE80] text-black px-1 py-0.5 font-bold border border-black">
+                        🟢 ACTIVE
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[8px] bg-gray-300 text-black px-1 py-0.5 font-bold border border-black">
+                        ⚪ PAUSED
                       </span>
                     )}
-                  </h4>
-                  <p className="font-mono text-[10px] text-gray-600 mt-1">
-                    Debit: <span className="font-bold">₹{sub.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {sub.frequency}</span>
-                  </p>
-                  <p className="font-mono text-[9px] text-gray-500 mt-0.5">
-                    Next billing: {sub.nextBillingDate} ({acc?.name})
-                  </p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {/* TOGGLE ACTIVE */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[10px]">
+                  <span className="text-gray-600">
+                    Amount:{' '}
+                    <span className="font-bold text-black">
+                      ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycle === 'yearly' ? 'yr' : 'mo'}
+                    </span>
+                  </span>
+                  <span className="text-gray-600">
+                    Renewal:{' '}
+                    <span className="font-bold text-black">{renewalDate}</span>
+                  </span>
+                  <span className="text-gray-600 col-span-2">
+                    Vault:{' '}
+                    <span className="font-bold text-black">{acc?.name || 'Direct'}</span>
+                  </span>
+                </div>
+
+                <div className={`mt-2 px-1.5 py-0.5 border border-black font-mono text-[9px] font-bold ${renewalColor} ${renewalBg} inline-block`}>
+                  {renewalLabel}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-black border-dashed">
+                  <button
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('open-edit-subscription', { detail: sub }));
+                    }}
+                    className="p-1.5 bg-[#FFDE4D] border border-black hover:bg-yellow-400 active:translate-y-[1px] transition-all"
+                    title="Edit Subscription"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-black" />
+                  </button>
                   <button
                     onClick={() => toggleSubscriptionActive(sub.id)}
-                    className={`p-2 border-2 border-black flex items-center justify-center font-mono text-xs font-bold transition-all shadow-[1px_1px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] ${
-                      sub.isActive 
-                        ? 'bg-[#FFDE4D] text-black' 
+                    className={`p-1.5 border border-black flex items-center justify-center font-mono text-xs font-bold transition-all shadow-[1px_1px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] ${
+                      isActive
+                        ? 'bg-[#FFDE4D] text-black'
                         : 'bg-green-400 text-black'
                     }`}
                     style={{ cursor: 'pointer' }}
                   >
-                    {sub.isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                    {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                   </button>
-
-                  {/* DELETION */}
                   <button
                     onClick={() => deleteSubscription(sub.id)}
-                    className="p-2 bg-[#FF9F9F] border-2 border-black flex items-center justify-center shadow-[1px_1px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[1px] active:translate-y-[1px]"
+                    className="p-1.5 bg-[#FF9F9F] border border-black hover:bg-red-400 active:translate-y-[1px] transition-all"
+                    title="Delete Subscription"
                     style={{ cursor: 'pointer' }}
                   >
                     <X className="w-3.5 h-3.5 text-black" />

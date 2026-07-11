@@ -731,23 +731,41 @@ console.table(
                     Continuous capital outflow telemetry
                   </span>
                 </div>
-                <div className="bg-[#C084FC] border-2 border-black px-2 py-0.5 font-mono text-xs font-bold text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
-                  ₹{(() => {
-                    const activeSubsList = subscriptions.filter(s => s.active ?? s.isActive ?? true);
-                    const totalMonthly = activeSubsList.reduce((sum, s) => {
-                      const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-                      if (cycle === 'yearly') {
-                        return sum + (s.amount / 12);
-                      }
-                      return sum + s.amount;
-                    }, 0);
-                    return totalMonthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  })()}/mo recurring
+                <div className="flex gap-1.5">
+                  <div className="bg-[#C084FC] border-2 border-black px-2 py-0.5 font-mono text-xs font-bold text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
+                    {(() => {
+                      const activeSubsList = subscriptions.filter(s => s.active ?? s.isActive ?? true);
+                      const totalMonthly = activeSubsList.reduce((sum, s) => {
+                        const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
+                        if (cycle === 'yearly') return sum + (s.amount / 12);
+                        return sum + s.amount;
+                      }, 0);
+                      const totalAnnual = activeSubsList.reduce((sum, s) => {
+                        const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
+                        if (cycle === 'yearly') return sum + s.amount;
+                        return sum + (s.amount * 12);
+                      }, 0);
+                      return (
+                        <div className="flex flex-col items-end">
+                          <span>Monthly: ₹{totalMonthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-[8px] opacity-80">Annual: ₹{totalAnnual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 mb-3 max-h-[140px] overflow-y-auto pr-1">
+              <div className="flex flex-col gap-3 mb-3 max-h-[300px] overflow-y-auto pr-1">
                 {subscriptions.filter(s => s.active ?? s.isActive ?? true).map((sub) => {
+                  const svcName = sub.service_name || sub.name || '';
+                  const cycle = sub.billing_cycle || (sub.frequency === 'annual' ? 'yearly' : 'monthly') || 'monthly';
+                  const renewalDate = sub.renewal_date || sub.nextBillingDate || '';
+                  const isActive = sub.active ?? sub.isActive ?? true;
+                  const subColor = sub.color || '#C084FC';
+                  const vault = accounts.find(a => a.id === (sub.payment_account || sub.accountId));
+                  const linkedPm = paymentMethods.find(pm => pm.accountId === (sub.payment_account || sub.accountId));
+
                   const getSubEmoji = (iconName?: string) => {
                     switch (iconName) {
                       case 'Tv': return '📺';
@@ -759,35 +777,115 @@ console.table(
                       default: return '💳';
                     }
                   };
+
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const renewalDateObj = new Date(renewalDate);
+                  renewalDateObj.setHours(0, 0, 0, 0);
+                  const diffTime = renewalDateObj.getTime() - today.getTime();
+                  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                  const cycleDays = cycle === 'yearly' ? 365 : 30;
+                  const lastRenewal = new Date(renewalDateObj);
+                  lastRenewal.setDate(lastRenewal.getDate() - cycleDays);
+                  const daysElapsed = Math.round((today.getTime() - lastRenewal.getTime()) / (1000 * 60 * 60 * 24));
+                  const progressPct = Math.min(100, Math.max(0, (daysElapsed / cycleDays) * 100));
+
+                  let renewalLabel: string;
+                  let renewalColor: string;
+                  let progressColor: string;
+                  if (diffDays < 0) {
+                    renewalLabel = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
+                    renewalColor = 'text-red-600';
+                    progressColor = '#FF6B6B';
+                  } else if (diffDays === 0) {
+                    renewalLabel = 'Renews Today';
+                    renewalColor = 'text-orange-600';
+                    progressColor = '#FB923C';
+                  } else if (diffDays === 1) {
+                    renewalLabel = 'Renews Tomorrow';
+                    renewalColor = 'text-orange-600';
+                    progressColor = '#FB923C';
+                  } else if (diffDays <= 7) {
+                    renewalLabel = `⚠ Renews in ${diffDays} days`;
+                    renewalColor = 'text-amber-600';
+                    progressColor = '#FFDE4D';
+                  } else {
+                    renewalLabel = `🔄 Renews in ${diffDays} days`;
+                    renewalColor = 'text-green-600';
+                    progressColor = '#4ADE80';
+                  }
+
+                  const nextChargeDate = new Date(renewalDate);
+                  const chargeFormatted = nextChargeDate.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  }).replace(/ /g, ' ');
+
                   return (
-                    <div key={sub.id} className="flex items-center justify-between text-xs font-mono border-b border-gray-50 pb-1.5 last:border-b-0 last:pb-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm select-none">{getSubEmoji(sub.icon)}</span>
-                        <span className="font-bold text-black">{sub.service_name || sub.name}</span>
-                        {sub.auto_debit && (
-                          <span className="bg-[#4ADE80]/20 text-[#22c55e] border border-[#22c55e]/30 px-1 text-[7px] font-bold uppercase rounded-sm">
-                            AUTO
+                    <div key={sub.id} className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-9 h-9 border-2 border-black flex items-center justify-center text-lg shrink-0 shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]"
+                          style={{ backgroundColor: subColor }}
+                        >
+                          {getSubEmoji(sub.icon)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-display text-sm font-bold text-black truncate">{svcName}</span>
+                            {isActive ? (
+                              <span className="font-mono text-[8px] bg-[#4ADE80] text-black px-1 py-0.5 font-bold border border-black leading-none">🟢 ACTIVE</span>
+                            ) : (
+                              <span className="font-mono text-[8px] bg-gray-300 text-black px-1 py-0.5 font-bold border border-black leading-none">⚪ PAUSED</span>
+                            )}
+                          </div>
+                          <div className="font-mono text-[11px] font-bold text-black mt-0.5">
+                            ₹{sub.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycle === 'yearly' ? 'year' : 'month'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={`mt-2 px-1.5 py-0.5 border border-black font-mono text-[9px] font-bold ${renewalColor} inline-block`}>
+                        {renewalLabel}
+                      </div>
+
+                      <div className="w-full h-2 border border-black bg-gray-100 mt-2">
+                        <div
+                          className="h-full transition-all"
+                          style={{ width: `${progressPct}%`, backgroundColor: progressColor }}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 font-mono text-[9px] text-gray-600">
+                        <span>
+                          Next Charge:{' '}
+                          <span className="font-bold text-black">{chargeFormatted}</span>
+                        </span>
+                        <span>
+                          Vault:{' '}
+                          <span className="font-bold text-black">{vault?.name || 'Direct'}</span>
+                        </span>
+                        {linkedPm && (
+                          <span className="col-span-2">
+                            Payment:{' '}
+                            <span className="font-bold text-black">{getPaymentMethodIcon(linkedPm.icon)} {linkedPm.name}</span>
                           </span>
                         )}
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold text-black">
-                          ₹{sub.amount.toLocaleString('en-IN')}/{sub.billing_cycle === 'yearly' || sub.frequency === 'annual' ? 'yr' : 'mo'}
-                        </span>
-                        <span className="text-[8px] text-gray-400 block">Next: {sub.renewal_date || sub.nextBillingDate}</span>
                       </div>
                     </div>
                   );
                 })}
                 {subscriptions.filter(s => s.active ?? s.isActive ?? true).length === 0 && (
-                  <div className="text-center py-2 text-gray-400 text-[10px] uppercase font-mono italic">
+                  <div className="text-center py-4 text-gray-400 text-[10px] uppercase font-mono italic">
                     No active subscriptions detected.
                   </div>
                 )}
               </div>
 
               {/* LIVE DATABASE TABLE VIEW REPRESENTATION */}
-              <div className="border border-black p-2 bg-gray-50 overflow-x-auto font-mono text-[9px] mt-1">
+              <div className="border border-black p-2 bg-gray-50 overflow-x-auto font-mono text-[9px]">
                 <div className="flex items-center justify-between mb-1 pb-1 border-b border-black/10">
                   <span className="font-bold text-black uppercase text-[8px] text-gray-500">
                     🗃️ DB VIEW: [dbo].[subscriptions_table]
@@ -988,7 +1086,17 @@ console.table(
                           <span className="text-sm select-none shrink-0">{getVaultEmoji(acc.type)}</span>
                           <span className="font-bold truncate" title={acc.name}>{acc.name}</span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
+                            }}
+                            className="p-0.5 border border-black hover:bg-blue-100 transition-colors"
+                            title="Edit Vault"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <Pencil className="w-3 h-3 text-black" />
+                          </button>
                           <span className="font-bold">{formatINR(acc.balance)}</span>
                           <span className="text-black font-black tracking-tighter select-none">{getRelativeBlocks(acc.balance)}</span>
                         </div>
@@ -1061,7 +1169,18 @@ console.table(
                   <div key={acc.id} className="border-2 border-black bg-white p-4 shadow-[3px_3px_0px_rgba(0,0,0,1)] flex flex-col gap-3">
                     <div className="flex items-center gap-2 border-b-2 border-black pb-1.5">
                       <span className="text-xl select-none">{getVaultEmoji(acc.type)}</span>
-                      <span className="font-display font-black text-sm uppercase text-black">{acc.name}</span>
+                      <span className="font-display font-black text-sm uppercase text-black flex-1">{acc.name}</span>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
+                          setIsVaultModalOpen(false);
+                        }}
+                        className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 active:translate-y-[1px] transition-all"
+                        title="Edit Vault"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-black" />
+                      </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono">
