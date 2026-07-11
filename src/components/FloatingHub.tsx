@@ -18,12 +18,13 @@ import {
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
+import type { Goal } from '../types';
 
 type ModalType = 'expense' | 'income' | 'goal' | 'transfer' | 'subscription' | 'payment_method' | null;
 
 export default function FloatingHub() {
   const auth = useAuthContext();
-  const { accounts, paymentMethods, addTransaction, addGoal, addSubscription, addPaymentMethod } = useFinanceStore();
+  const { accounts, paymentMethods, addTransaction, addGoal, updateGoal, addSubscription, addPaymentMethod } = useFinanceStore();
   const [isOpen, setIsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -46,6 +47,22 @@ export default function FloatingHub() {
     return () => window.removeEventListener('open-add-transaction', handleOpenAdd);
   }, [accounts]);
 
+  React.useEffect(() => {
+    const handleEditGoal = (e: Event) => {
+      const goal = (e as CustomEvent).detail as Goal;
+      setEditingGoal(goal);
+      setGoalName(goal.name);
+      setGoalTarget(String(goal.targetAmount));
+      setGoalCurrentAmount(String(goal.currentAmount));
+      setGoalDeadline(goal.deadline);
+      setGoalStatus(goal.status);
+      setError(null);
+      setActiveModal('goal');
+    };
+    window.addEventListener('open-edit-goal', handleEditGoal);
+    return () => window.removeEventListener('open-edit-goal', handleEditGoal);
+  }, []);
+
   // Form States
   // Expense/Income
   const [description, setDescription] = useState('');
@@ -58,6 +75,9 @@ export default function FloatingHub() {
   const [goalName, setGoalName] = useState('');
   const [goalTarget, setGoalTarget] = useState('');
   const [goalDeadline, setGoalDeadline] = useState('');
+  const [goalCurrentAmount, setGoalCurrentAmount] = useState('');
+  const [goalStatus, setGoalStatus] = useState<'active' | 'completed' | 'paused'>('active');
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
   // Transfer
   const [fromAccountId, setFromAccountId] = useState(accounts[0]?.id || '');
@@ -102,6 +122,9 @@ export default function FloatingHub() {
     setGoalName('');
     setGoalTarget('');
     setGoalDeadline('');
+    setGoalCurrentAmount('');
+    setGoalStatus('active');
+    setEditingGoal(null);
     setFromAccountId(accounts[0]?.id || '');
     // Default "to" account to a different one if available
     const otherAccount = accounts.find(a => a.id !== accounts[0]?.id);
@@ -122,6 +145,7 @@ export default function FloatingHub() {
   const closeModal = () => {
     setActiveModal(null);
     setError(null);
+    setEditingGoal(null);
   };
 
   // Submission Handlers
@@ -203,16 +227,39 @@ export default function FloatingHub() {
       return;
     }
 
-    addGoal({
-      name: goalName,
-      targetAmount: parsedTarget,
-      currentAmount: 0,
-      deadline: goalDeadline,
-      category: 'Savings',
-      status: 'active'
-    }, auth.userId ?? undefined);
+    if (editingGoal) {
+      const parsedCurrent = parseFloat(goalCurrentAmount);
+      if (isNaN(parsedCurrent) || parsedCurrent < 0) {
+        setError('CURRENT AMOUNT CANNOT BE NEGATIVE.');
+        return;
+      }
 
-    triggerToast(`NEW GOAL "${goalName.toUpperCase()}" SAVED WITH ₹${parsedTarget.toLocaleString('en-IN')} TARGET.`);
+      // BONUS: auto-complete if current >= target
+      const finalStatus = parsedCurrent >= parsedTarget ? 'completed' : goalStatus;
+
+      updateGoal({
+        ...editingGoal,
+        name: goalName,
+        targetAmount: parsedTarget,
+        currentAmount: parsedCurrent,
+        deadline: goalDeadline,
+        status: finalStatus,
+      });
+
+      triggerToast(`GOAL "${goalName.toUpperCase()}" UPDATED SUCCESSFULLY.`);
+    } else {
+      addGoal({
+        name: goalName,
+        targetAmount: parsedTarget,
+        currentAmount: 0,
+        deadline: goalDeadline,
+        category: 'Savings',
+        status: 'active'
+      }, auth.userId ?? undefined);
+
+      triggerToast(`NEW GOAL "${goalName.toUpperCase()}" SAVED WITH ₹${parsedTarget.toLocaleString('en-IN')} TARGET.`);
+    }
+
     closeModal();
   };
 
@@ -491,7 +538,7 @@ export default function FloatingHub() {
                   <h3 className="font-display text-xl font-black text-black uppercase tracking-tight">
                     {activeModal === 'expense' && 'LOG NEW EXPENSE'}
                     {activeModal === 'income' && 'LOG INFLOW INCOME'}
-                    {activeModal === 'goal' && 'SET SAVINGS TARGET'}
+                    {activeModal === 'goal' && (editingGoal ? 'EDIT GOAL' : 'SET SAVINGS TARGET')}
                     {activeModal === 'transfer' && 'INTER-VAULT TRANSFER'}
                     {activeModal === 'subscription' && 'ADD SUBSCRIPTION'}
                   </h3>
@@ -752,6 +799,63 @@ export default function FloatingHub() {
                       />
                     </div>
 
+                    {editingGoal ? (
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          CURRENT AMOUNT (₹)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 40000"
+                          value={goalCurrentAmount}
+                          onChange={(e) => setGoalCurrentAmount(e.target.value)}
+                          className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          TARGET DEADLINE
+                        </label>
+                        <input
+                          type="date"
+                          value={goalDeadline}
+                          onChange={(e) => setGoalDeadline(e.target.value)}
+                          className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {editingGoal ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          TARGET DEADLINE
+                        </label>
+                        <input
+                          type="date"
+                          value={goalDeadline}
+                          onChange={(e) => setGoalDeadline(e.target.value)}
+                          className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          STATUS
+                        </label>
+                        <select
+                          value={goalStatus}
+                          onChange={(e) => setGoalStatus(e.target.value as 'active' | 'completed' | 'paused')}
+                          className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        >
+                          <option value="active">ACTIVE</option>
+                          <option value="completed">COMPLETED</option>
+                          <option value="paused">PAUSED</option>
+                        </select>
+                      </div>
+                    </div>
+                  ) : (
                     <div>
                       <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
                         TARGET DEADLINE
@@ -763,7 +867,7 @@ export default function FloatingHub() {
                         className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
                       />
                     </div>
-                  </div>
+                  )}
 
                   <div className="pt-2 flex gap-3">
                     <button
@@ -779,7 +883,7 @@ export default function FloatingHub() {
                       className="w-1/2 bg-[#FFDE4D] hover:bg-yellow-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
-                      MOUNT TARGET
+                      {editingGoal ? 'SAVE GOAL' : 'MOUNT TARGET'}
                     </button>
                   </div>
                 </form>

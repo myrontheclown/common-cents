@@ -24,7 +24,10 @@ import {
   HelpCircle,
   Lightbulb,
   Cpu,
-  X
+  X,
+  Target,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
@@ -47,7 +50,8 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     preferences, 
     addTransaction,
     setInsights,
-    paymentMethods
+    paymentMethods,
+    deleteGoal
   } = useFinanceStore();
   const auth = useAuthContext();
 
@@ -321,7 +325,19 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
       default: return <Sparkles className={cls} />;
     }
   };
-
+  // 👇 TEMP DEBUG
+console.table(
+  goals.map(g => ({
+    name: g.name,
+    current: g.currentAmount,
+    target: g.targetAmount,
+    status: g.status,
+    progress:
+      g.targetAmount > 0
+        ? Math.round((g.currentAmount / g.targetAmount) * 100)
+        : 0,
+  }))
+);
   return (
     <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
       
@@ -805,6 +821,92 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Savings Goals */}
+            <div className="border-2 border-black p-3.5 bg-[#FFFDEB] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+              <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
+                Savings Goals
+              </span>
+
+              {goals.length === 0 ? (
+                <div className="text-center py-4 text-gray-400 text-[10px] uppercase font-mono italic">
+                  No savings goals set up yet.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-1">
+                  
+                  {goals.map((goal) => {
+                    const progress = goal.targetAmount > 0
+                      ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
+                      : 0;
+                    const statusColor = goal.status === 'completed' ? 'bg-[#4ADE80]'
+                      : goal.status === 'paused' ? 'bg-[#FB923C]'
+                      : 'bg-[#FFDE4D]';
+                    const statusLabel = goal.status === 'completed' ? 'COMPLETED'
+                      : goal.status === 'paused' ? 'PAUSED'
+                      : 'ACTIVE';
+
+                    return (
+                      <div key={goal.id} className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[11px] font-bold text-black truncate">
+                                {goal.name}
+                              </span>
+                              <span className={`text-[7px] font-mono font-bold uppercase px-1 py-0.5 border border-black ${statusColor}`}>
+                                {statusLabel}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                window.dispatchEvent(new CustomEvent('open-edit-goal', { detail: goal }));
+                              }}
+                              className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
+                              title="Edit goal"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <Pencil className="w-3 h-3 text-black" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`DELETE GOAL "${goal.name}"?`)) {
+                                  deleteGoal(goal.id);
+                                }
+                              }}
+                              className="p-1 border border-black bg-[#FF9F9F] hover:bg-red-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
+                              title="Delete goal"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <Trash2 className="w-3 h-3 text-black" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[9px] font-mono text-gray-600 mb-1">
+                          <span>₹{goal.currentAmount.toLocaleString('en-IN')} / ₹{goal.targetAmount.toLocaleString('en-IN')}</span>
+                          <span className="font-bold text-black">{progress}%</span>
+                        </div>
+
+                        <div className="w-full bg-gray-100 h-2 border border-black">
+                          <div
+                            className="bg-[#FFDE4D] h-full transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1.5 text-[8px] font-mono text-gray-500">
+                          <span>DEADLINE: {goal.deadline || 'N/A'}</span>
+                          {progress >= 100 && <span className="text-[#22c55e] font-bold">✓ TARGET REACHED</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Mission Objectives */}
