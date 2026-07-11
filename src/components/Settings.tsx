@@ -241,6 +241,16 @@ export default function Settings() {
       return;
     }
 
+    const duplicate = budgets.find(b =>
+      b.category === budgetCategory &&
+      b.period === budgetPeriod &&
+      (editingBudget ? b.id !== editingBudget.id : true)
+    );
+    if (duplicate) {
+      triggerNotification('ERROR: BUDGET ALREADY EXISTS FOR THIS CATEGORY AND PERIOD.');
+      return;
+    }
+
     if (editingBudget) {
       await updateBudget({
         ...editingBudget,
@@ -693,15 +703,17 @@ export default function Settings() {
               {budgets.map(budget => {
                 const pct = Math.min(budget.limit > 0 ? (budget.spent / budget.limit) * 100 : 0, 100);
                 const remaining = budget.limit - budget.spent;
+                const isExceeded = budget.spent > budget.limit;
                 return (
-                  <div key={budget.id} className="border-2 border-black p-3 flex flex-col gap-2 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                  <div key={budget.id} className={`border-2 border-black p-3 flex flex-col gap-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] ${isExceeded ? 'bg-red-50 border-red-500' : ''}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{getCategoryEmoji(budget.category)}</span>
                         <span className="font-display text-sm font-bold text-black">{budget.category}</span>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <span className="font-mono text-[9px] bg-black text-white px-1.5 py-0.5 font-bold">{budget.period.toUpperCase()}</span>
+                        <span className="font-mono text-[10px] font-bold text-gray-600">{Math.round(pct)}%</span>
                         <button
                           onClick={() => openEditBudget(budget)}
                           className="p-1 border border-black hover:bg-gray-100 transition-colors"
@@ -733,9 +745,16 @@ export default function Settings() {
                       <span className="font-bold">
                         ₹{budget.spent.toLocaleString('en-IN')} / ₹{budget.limit.toLocaleString('en-IN')}
                       </span>
-                      <span className={remaining >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                        Remaining ₹{Math.abs(remaining).toLocaleString('en-IN')}
-                      </span>
+                      {isExceeded ? (
+                        <span className="text-red-600 font-bold flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Exceeded by ₹{Math.abs(remaining).toLocaleString('en-IN')}
+                        </span>
+                      ) : (
+                        <span className="text-green-600 font-bold">
+                          Remaining ₹{remaining.toLocaleString('en-IN')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

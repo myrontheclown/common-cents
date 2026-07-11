@@ -30,7 +30,6 @@ export function budgetToUpdate(budget: Budget): BudgetUpdate {
   return {
     category: budget.category,
     limit_amount: budget.limit,
-    spent: budget.spent,
     period: budget.period,
   };
 }
