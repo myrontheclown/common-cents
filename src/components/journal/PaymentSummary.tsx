@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { CreditCard } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
+import { getPaymentMethodIcon } from '../../lib/paymentMethodIcons';
 
 interface Props {
   paymentMethods: PaymentMethod[];
@@ -8,6 +9,10 @@ interface Props {
 }
 
 export default function PaymentSummary({ paymentMethods, mostUsed }: Props) {
+  const mostUsedPm = mostUsed
+    ? paymentMethods.find(p => p.name === mostUsed.name)
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -22,7 +27,9 @@ export default function PaymentSummary({ paymentMethods, mostUsed }: Props) {
       {mostUsed ? (
         <div className="border-2 border-black p-2.5 bg-[#A5F3FC]/20">
           <span className="font-mono text-[9px] text-gray-500 font-bold block uppercase">Most Used</span>
-          <span className="font-display text-sm font-black text-black">{mostUsed.name}</span>
+          <span className="font-display text-sm font-black text-black flex items-center gap-2">
+            {getPaymentMethodIcon(mostUsedPm?.icon)} {mostUsed.name}
+          </span>
           <span className="font-mono text-[10px] text-gray-500 block">{mostUsed.count} transactions</span>
         </div>
       ) : (

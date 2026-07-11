@@ -24,6 +24,7 @@ import {
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
 import { Transaction, Subscription, PaymentMethod } from '../types';
+import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
 
 export default function Ledger() {
   const auth = useAuthContext();
@@ -274,13 +275,16 @@ export default function Ledger() {
                     {/* DESCRIPTION */}
                     <td className="p-3 border-r-2 border-black">
                       <div className="font-display font-bold text-sm text-black">{t.description}</div>
-                      {t.paymentMethodId && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 border border-black text-[9px] font-mono font-bold text-purple-700 uppercase">
-                            💳 {paymentMethods.find(pm => pm.id === t.paymentMethodId)?.name || 'Payment Method'}
-                          </span>
-                        </div>
-                      )}
+                      {t.paymentMethodId && (() => {
+                        const p = paymentMethods.find(pm => pm.id === t.paymentMethodId);
+                        return (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 border border-black text-[9px] font-mono font-bold text-purple-700 uppercase">
+                              {getPaymentMethodIcon(p?.icon)} {p?.name || 'Payment Method'}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* CATEGORY */}

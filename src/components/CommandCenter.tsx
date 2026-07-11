@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
+import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 interface CommandCenterProps {
@@ -978,7 +979,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                         <div className="flex flex-wrap gap-1">
                           {linked.map(pm => (
                             <span key={pm.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 border border-black text-[9px] font-bold text-purple-700 uppercase">
-                              {getPaymentMethodEmoji(pm.type)} {pm.name}
+                              {getPaymentMethodIcon(pm.icon)} {pm.name}
                             </span>
                           ))}
                         </div>

@@ -13,14 +13,10 @@ import {
   Zap, 
   User, 
   Plus, 
-  Landmark, 
-  Coins, 
-  CreditCard, 
   TrendingUp, 
   CheckCircle2,
   Terminal,
   AlertTriangle,
-  Smartphone,
   Shield,
   Trash2,
   Lock,
@@ -29,7 +25,8 @@ import {
   X
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
-import type { Budget } from '../types';
+import type { Budget, PaymentMethod } from '../types';
+import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
 
 export default function Settings() {
   const auth = useAuthContext();
@@ -43,6 +40,7 @@ export default function Settings() {
     addAccount,
     addPaymentMethod,
     deletePaymentMethod,
+    updatePaymentMethod,
     deleteAccount,
     addBudget,
     updateBudget,
@@ -71,6 +69,7 @@ export default function Settings() {
   const [newPmAccountId, setNewPmAccountId] = useState(accounts[0]?.id || '');
   const [newPmColor, setNewPmColor] = useState('#C084FC');
   const [newPmIcon, setNewPmIcon] = useState('Smartphone');
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
 
   // Budget Management state
   const [showBudgetModal, setShowBudgetModal] = useState(false);
@@ -133,6 +132,15 @@ export default function Settings() {
     triggerNotification(`NEW VAULT "${newAccName.toUpperCase()}" ADDED TO COMMON CENTS INDEX.`);
   };
 
+  const handleEditPaymentMethod = (pm: PaymentMethod) => {
+    setEditingPaymentMethod(pm);
+    setNewPmName(pm.name);
+    setNewPmType(pm.type);
+    setNewPmAccountId(pm.accountId);
+    setNewPmColor(pm.color);
+    setNewPmIcon(pm.icon);
+  };
+
   const handlePaymentMethodSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPmName) return;
@@ -143,16 +151,38 @@ export default function Settings() {
       return;
     }
 
-    addPaymentMethod({
-      name: newPmName,
-      type: newPmType,
-      accountId: targetAccountId,
-      color: newPmColor,
-      icon: newPmIcon
-    }, auth.userId ?? undefined);
+    if (editingPaymentMethod) {
+      updatePaymentMethod({
+        id: editingPaymentMethod.id,
+        name: newPmName,
+        type: newPmType,
+        accountId: targetAccountId,
+        color: newPmColor,
+        icon: newPmIcon,
+      });
+      triggerNotification(`PAYMENT METHOD "${newPmName.toUpperCase()}" UPDATED SUCCESSFULLY.`);
+      setEditingPaymentMethod(null);
+    } else {
+      addPaymentMethod({
+        name: newPmName,
+        type: newPmType,
+        accountId: targetAccountId,
+        color: newPmColor,
+        icon: newPmIcon
+      }, auth.userId ?? undefined);
+      triggerNotification(`NEW PAYMENT METHOD "${newPmName.toUpperCase()}" INSTANTIATED.`);
+    }
 
     setNewPmName('');
-    triggerNotification(`NEW PAYMENT METHOD "${newPmName.toUpperCase()}" INSTANTIATED.`);
+  };
+
+  const handleCancelEditPaymentMethod = () => {
+    setEditingPaymentMethod(null);
+    setNewPmName('');
+    setNewPmType('upi');
+    setNewPmAccountId(accounts[0]?.id || '');
+    setNewPmColor('#C084FC');
+    setNewPmIcon('Smartphone');
   };
 
   const budgetCategories = [
@@ -475,11 +505,14 @@ export default function Settings() {
           </form>
         </div>
 
-        {/* MOUNT NEW PAYMENT METHOD */}
+        {/* MOUNT / EDIT PAYMENT METHOD */}
         <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
           <h3 className="font-display text-base font-bold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
-            <Plus className="w-4 h-4 text-black" />
-            MOUNT NEW PAYMENT METHOD
+            {editingPaymentMethod ? <Edit3 className="w-4 h-4 text-black" /> : <Plus className="w-4 h-4 text-black" />}
+            {editingPaymentMethod ? 'EDIT PAYMENT METHOD' : 'MOUNT NEW PAYMENT METHOD'}
+            {editingPaymentMethod && (
+              <span className="ml-auto font-mono text-[9px] bg-black text-white px-2 py-0.5">EDITING: {editingPaymentMethod.name.toUpperCase()}</span>
+            )}
           </h3>
 
           <form onSubmit={handlePaymentMethodSubmit} className="flex flex-col gap-4">
@@ -556,13 +589,25 @@ export default function Settings() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="bg-[#C084FC] text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-[#a855f7] self-start"
-              style={{ cursor: 'pointer' }}
-            >
-              MOUNT PAYMENT METHOD
-            </button>
+            <div className="flex items-center gap-3 self-start">
+              {editingPaymentMethod && (
+                <button
+                  type="button"
+                  onClick={handleCancelEditPaymentMethod}
+                  className="bg-white text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-gray-100"
+                  style={{ cursor: 'pointer' }}
+                >
+                  CANCEL
+                </button>
+              )}
+              <button
+                type="submit"
+                className="bg-[#C084FC] text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-[#a855f7]"
+                style={{ cursor: 'pointer' }}
+              >
+                {editingPaymentMethod ? 'SAVE PAYMENT METHOD' : 'MOUNT PAYMENT METHOD'}
+              </button>
+            </div>
           </form>
         </div>
 
@@ -585,19 +630,28 @@ export default function Settings() {
                     style={{ backgroundColor: pm.color || '#E9D5FF' }}
                   >
                     <div className="flex items-center gap-2">
-                      <Smartphone className="w-4 h-4 text-black" />
+                      {getPaymentMethodIcon(pm.icon)}
                       <div>
                         <span className="text-black font-bold">{pm.name}</span>
                         <span className="block text-[9px] text-gray-600 font-normal">Vault: {linkedVault}</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => deletePaymentMethod(pm.id)}
-                      className="text-black hover:text-red-600 p-0.5"
-                      title="Dismount Payment Method"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => handleEditPaymentMethod(pm)}
+                        className="text-black hover:text-blue-600 p-0.5"
+                        title="Edit Payment Method"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => deletePaymentMethod(pm.id)}
+                        className="text-black hover:text-red-600 p-0.5"
+                        title="Dismount Payment Method"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })

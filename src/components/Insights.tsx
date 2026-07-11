@@ -16,6 +16,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
+import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 
 export default function Insights() {
@@ -423,6 +424,7 @@ export default function Insights() {
                         <div key={pm.id} className="border border-black bg-white p-2 flex items-center justify-between hover:bg-gray-50">
                           <div>
                             <div className="flex items-center gap-1.5">
+                              {getPaymentMethodIcon(pm.icon)}
                               <span 
                                 className="inline-block w-2 h-2 border border-black rounded-none"
                                 style={{ backgroundColor: pm.color || '#000' }}
