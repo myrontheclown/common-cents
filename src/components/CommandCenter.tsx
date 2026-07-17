@@ -32,6 +32,7 @@ import {
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
+import LowBalanceWarning from './LowBalanceWarning';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 interface CommandCenterProps {
@@ -68,6 +69,17 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
   const [accId, setAccId] = useState(accounts[0]?.id || 'bank-1');
 
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
+
+  // Low balance warning state
+  const [showBalanceWarning, setShowBalanceWarning] = useState(false);
+  const [pendingTx, setPendingTx] = useState<{
+    description: string;
+    amount: number;
+    category: string;
+    type: 'income' | 'expense';
+    accountId: string;
+    currentBalance: number;
+  } | null>(null);
 
   const getVaultEmoji = (type: string) => {
     switch (type) {
@@ -254,15 +266,54 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     e.preventDefault();
     if (!desc || !amount || isNaN(Number(amount)) || Number(amount) <= 0) return;
 
+    const parsedAmount = Number(parseFloat(amount).toFixed(2));
+
+    if (type === 'expense') {
+      const selectedAccount = accounts.find(a => a.id === accId);
+      if (selectedAccount) {
+        const projectedBalance = selectedAccount.balance - parsedAmount;
+        if (projectedBalance < 0) {
+          setPendingTx({
+            description: desc,
+            amount: parsedAmount,
+            category,
+            type,
+            accountId: accId,
+            currentBalance: selectedAccount.balance,
+          });
+          setShowBalanceWarning(true);
+          return;
+        }
+      }
+    }
+
     addTransaction({
       description: desc,
-      amount: Number(parseFloat(amount).toFixed(2)),
+      amount: parsedAmount,
       category: type === 'income' ? 'Income' : category,
       type,
       accountId: accId,
       date: new Date().toISOString().split('T')[0]
     }, auth.userId ?? undefined);
 
+    setDesc('');
+    setAmount('');
+  };
+
+  const handleProceedWithQuickTx = () => {
+    if (!pendingTx) return;
+
+    addTransaction({
+      description: pendingTx.description,
+      amount: pendingTx.amount,
+      category: pendingTx.type === 'income' ? 'Income' : pendingTx.category,
+      type: pendingTx.type,
+      accountId: pendingTx.accountId,
+      date: new Date().toISOString().split('T')[0]
+    }, auth.userId ?? undefined);
+
+    setShowBalanceWarning(false);
+    setPendingTx(null);
     setDesc('');
     setAmount('');
   };
@@ -1067,46 +1118,100 @@ console.table(
               <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
                 Your Vaults
               </span>
-              
-              <div className="flex flex-col gap-2">
+
+              <div className="flex flex-col gap-3">
                 {accounts.map((acc) => {
-                  const maxBalance = Math.max(...accounts.map(a => Math.abs(a.balance)), 1);
-                  const getRelativeBlocks = (bal: number) => {
-                    if (bal <= 0) return '░';
-                    const ratio = bal / maxBalance;
-                    const count = Math.max(1, Math.round(Math.sqrt(ratio) * 10));
-                    return '█'.repeat(count);
-                  };
                   const change = getMonthlyChange(acc.id);
+                  const linkedPms = paymentMethods.filter(pm => pm.accountId === acc.id);
+                  const netWorth = Math.max(totalNetWorth, 1);
+                  const netWorthPct = Math.max(0, Math.min(100, (acc.balance / netWorth) * 100));
+                  const isNegative = acc.balance < 0;
 
                   return (
-                    <div key={acc.id} className="flex flex-col gap-0.5 border-b border-black/10 pb-1.5 last:border-b-0 last:pb-0">
-                      <div className="flex items-center justify-between font-mono text-[11px] text-black">
+                    <div
+                      key={acc.id}
+                      className={`border-2 border-black p-3.5 shadow-[3px_3px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_rgba(0,0,0,1)] ${
+                        isNegative ? 'bg-red-50' : 'bg-white'
+                      }`}
+                    >
+                      {/* Header Row: Icon + Name + Edit */}
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-sm select-none shrink-0">{getVaultEmoji(acc.type)}</span>
-                          <span className="font-bold truncate" title={acc.name}>{acc.name}</span>
+                          <span className="text-lg select-none shrink-0">{getVaultEmoji(acc.type)}</span>
+                          <span className="font-display font-bold text-xs text-black uppercase truncate" title={acc.name}>
+                            {acc.name}
+                          </span>
+                          {isNegative && (
+                            <span className="flex items-center gap-0.5 bg-red-200 border border-red-600 px-1 py-0.5 font-mono text-[8px] font-bold text-red-700 uppercase leading-none">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Overdrawn
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => {
-                              window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
-                            }}
-                            className="p-0.5 border border-black hover:bg-blue-100 transition-colors"
-                            title="Edit Vault"
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <Pencil className="w-3 h-3 text-black" />
-                          </button>
-                          <span className="font-bold">{formatINR(acc.balance)}</span>
-                          <span className="text-black font-black tracking-tighter select-none">{getRelativeBlocks(acc.balance)}</span>
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
+                          }}
+                          className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all shrink-0"
+                          title="Edit Vault"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <Pencil className="w-3 h-3 text-black" />
+                        </button>
+                      </div>
+
+                      {/* Large Balance */}
+                      <div className={`font-display text-2xl font-black leading-tight mb-2.5 ${
+                        isNegative ? 'text-red-600' : 'text-black'
+                      }`}>
+                        {formatINR(acc.balance)}
+                      </div>
+
+                      {/* Progress Bar: Balance / Total Net Worth */}
+                      <div className="mb-2.5">
+                        <div className="flex items-center justify-between text-[9px] font-mono text-gray-500 mb-1">
+                          <span className="font-bold uppercase">Net Worth Share</span>
+                          <span className="font-bold text-black">{netWorthPct.toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2.5 border border-black overflow-hidden">
+                          <div
+                            className={`h-full border-r border-black transition-all ${
+                              isNegative ? 'bg-red-400' : 'bg-[#38BDF8]'
+                            }`}
+                            style={{ width: `${netWorthPct}%` }}
+                          />
                         </div>
                       </div>
-                      {change !== 0 && (
-                        <div className="flex justify-between items-center pl-5 text-[8px] font-mono">
-                          <span className="text-gray-500 uppercase">MONTHLY CHANGE:</span>
-                          <span className={change > 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                            {change > 0 ? '+' : ''}{formatINR(change)}
+
+                      {/* Monthly Change */}
+                      <div className="flex items-center gap-1 font-mono text-[10px] mb-2.5">
+                        <span className="text-gray-500 uppercase font-bold">Monthly:</span>
+                        {change > 0 ? (
+                          <span className="text-green-600 font-bold flex items-center gap-0.5">
+                            <ArrowUpRight className="w-3 h-3" /> +{formatINR(change)}
                           </span>
+                        ) : change < 0 ? (
+                          <span className="text-red-600 font-bold flex items-center gap-0.5">
+                            <ArrowDownRight className="w-3 h-3" /> -{formatINR(Math.abs(change))}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 font-bold flex items-center gap-0.5">
+                            ▬ No change
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Linked Payment Method Chips */}
+                      {linkedPms.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {linkedPms.map(pm => (
+                            <span
+                              key={pm.id}
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 border border-black text-[8px] font-mono font-bold text-purple-700 uppercase leading-none"
+                            >
+                              {getPaymentMethodIcon(pm.icon)} {pm.name}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -1120,7 +1225,7 @@ console.table(
                   className="font-mono text-[10px] font-black text-black hover:underline uppercase tracking-wider"
                   style={{ cursor: 'pointer' }}
                 >
-                  VIEW ALL →
+                  VAULT INDEX →
                 </button>
               </div>
             </div>
@@ -1228,6 +1333,19 @@ console.table(
         </div>
       )}
 
+      {pendingTx && (
+        <LowBalanceWarning
+          isOpen={showBalanceWarning}
+          onClose={() => {
+            setShowBalanceWarning(false);
+            setPendingTx(null);
+          }}
+          onConfirm={handleProceedWithQuickTx}
+          currentBalance={pendingTx.currentBalance}
+          transactionAmount={pendingTx.amount}
+          projectedBalance={pendingTx.currentBalance - pendingTx.amount}
+        />
+      )}
     </div>
   );
 }

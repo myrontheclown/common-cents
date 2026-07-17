@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
+import LowBalanceWarning from './LowBalanceWarning';
 import type { Goal, Subscription } from '../types';
 
 type ModalType = 'expense' | 'income' | 'goal' | 'transfer' | 'subscription' | 'payment_method' | null;
@@ -118,6 +119,18 @@ export default function FloatingHub() {
   // Validation errors
   const [error, setError] = useState<string | null>(null);
 
+  // Low balance warning state
+  const [showBalanceWarning, setShowBalanceWarning] = useState(false);
+  const [pendingExpense, setPendingExpense] = useState<{
+    amount: number;
+    description: string;
+    category: string;
+    accountId: string;
+    paymentMethodId?: string;
+    accountName: string;
+    currentBalance: number;
+  } | null>(null);
+
   const triggerToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => {
@@ -186,6 +199,24 @@ export default function FloatingHub() {
     if (!accountId) {
       setError('SELECT A VALID VAULT ACCOUNT.');
       return;
+    }
+
+    const selectedAccount = accounts.find(a => a.id === accountId);
+    if (selectedAccount) {
+      const projectedBalance = selectedAccount.balance - parsedAmount;
+      if (projectedBalance < 0) {
+        setPendingExpense({
+          amount: parsedAmount,
+          description,
+          category,
+          accountId,
+          paymentMethodId: paymentMethodId || undefined,
+          accountName: selectedAccount.name,
+          currentBalance: selectedAccount.balance,
+        });
+        setShowBalanceWarning(true);
+        return;
+      }
     }
 
     addTransaction({
@@ -376,6 +407,26 @@ export default function FloatingHub() {
 
       triggerToast(`SUBSCRIPTION "${subServiceName.toUpperCase()}" ADDED SECURELY.`);
     }
+    closeModal();
+  };
+
+  const handleProceedWithExpense = () => {
+    if (!pendingExpense) return;
+    const { amount: parsedAmount, description, category, accountId, paymentMethodId, accountName } = pendingExpense;
+
+    addTransaction({
+      date: new Date().toISOString().split('T')[0],
+      amount: parsedAmount,
+      description,
+      category,
+      type: 'expense',
+      accountId,
+      paymentMethodId
+    }, auth.userId ?? undefined);
+
+    triggerToast(`EXPENSE OF ₹${parsedAmount.toLocaleString('en-IN')} LOGGED TO ${accountName.toUpperCase()} SECURELY.`);
+    setShowBalanceWarning(false);
+    setPendingExpense(null);
     closeModal();
   };
 
@@ -1229,6 +1280,20 @@ export default function FloatingHub() {
           </div>
         )}
       </AnimatePresence>
+
+      {pendingExpense && (
+        <LowBalanceWarning
+          isOpen={showBalanceWarning}
+          onClose={() => {
+            setShowBalanceWarning(false);
+            setPendingExpense(null);
+          }}
+          onConfirm={handleProceedWithExpense}
+          currentBalance={pendingExpense.currentBalance}
+          transactionAmount={pendingExpense.amount}
+          projectedBalance={pendingExpense.currentBalance - pendingExpense.amount}
+        />
+      )}
     </>
   );
 }

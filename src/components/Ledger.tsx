@@ -25,6 +25,7 @@ import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
 import { Transaction, Subscription, PaymentMethod } from '../types';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
+import LowBalanceWarning from './LowBalanceWarning';
 
 export default function Ledger() {
   const auth = useAuthContext();
@@ -60,6 +61,14 @@ export default function Ledger() {
   const [newPmId, setNewPmId] = useState('');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+
+  // Low balance warning state
+  const [showBalanceWarning, setShowBalanceWarning] = useState(false);
+  const [pendingTxData, setPendingTxData] = useState<{
+    txData: Parameters<typeof addTransaction>[0] & { id?: string };
+    isEdit: boolean;
+    currentBalance: number;
+  } | null>(null);
 
   const openEditModal = (tx: Transaction) => {
     setEditingTx(tx);
@@ -137,12 +146,42 @@ export default function Ledger() {
       date: newDate
     };
 
+    if (newType === 'expense') {
+      const selectedAccount = accounts.find(a => a.id === newAccId);
+      if (selectedAccount) {
+        const projectedBalance = selectedAccount.balance - txData.amount;
+        if (projectedBalance < 0) {
+          setPendingTxData({
+            txData,
+            isEdit: !!editingTx,
+            currentBalance: selectedAccount.balance,
+          });
+          setShowBalanceWarning(true);
+          return;
+        }
+      }
+    }
+
     if (editingTx) {
       updateTransaction({ ...txData, id: editingTx.id });
     } else {
       addTransaction(txData, auth.userId ?? undefined);
     }
 
+    resetForm();
+  };
+
+  const handleProceedWithTx = () => {
+    if (!pendingTxData) return;
+
+    if (pendingTxData.isEdit && editingTx) {
+      updateTransaction({ ...pendingTxData.txData, id: editingTx.id });
+    } else {
+      addTransaction(pendingTxData.txData, auth.userId ?? undefined);
+    }
+
+    setShowBalanceWarning(false);
+    setPendingTxData(null);
     resetForm();
   };
 
@@ -634,6 +673,19 @@ export default function Ledger() {
         </div>
       )}
 
+      {pendingTxData && (
+        <LowBalanceWarning
+          isOpen={showBalanceWarning}
+          onClose={() => {
+            setShowBalanceWarning(false);
+            setPendingTxData(null);
+          }}
+          onConfirm={handleProceedWithTx}
+          currentBalance={pendingTxData.currentBalance}
+          transactionAmount={pendingTxData.txData.amount}
+          projectedBalance={pendingTxData.currentBalance - pendingTxData.txData.amount}
+        />
+      )}
     </div>
   );
 }
