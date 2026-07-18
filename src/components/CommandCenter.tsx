@@ -24,9 +24,15 @@ import {
   HelpCircle,
   Lightbulb,
   Cpu,
-  X
+  X,
+  Target,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
+import { useAuthContext } from '../providers/AuthProvider';
+import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
+import LowBalanceWarning from './LowBalanceWarning';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 interface CommandCenterProps {
@@ -45,8 +51,10 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     preferences, 
     addTransaction,
     setInsights,
-    paymentMethods
+    paymentMethods,
+    deleteGoal
   } = useFinanceStore();
+  const auth = useAuthContext();
 
   // Loading state for AI insights refresh
   const [refreshingInsights, setRefreshingInsights] = useState(false);
@@ -61,6 +69,17 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
   const [accId, setAccId] = useState(accounts[0]?.id || 'bank-1');
 
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
+
+  // Low balance warning state
+  const [showBalanceWarning, setShowBalanceWarning] = useState(false);
+  const [pendingTx, setPendingTx] = useState<{
+    description: string;
+    amount: number;
+    category: string;
+    type: 'income' | 'expense';
+    accountId: string;
+    currentBalance: number;
+  } | null>(null);
 
   const getVaultEmoji = (type: string) => {
     switch (type) {
@@ -247,15 +266,54 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     e.preventDefault();
     if (!desc || !amount || isNaN(Number(amount)) || Number(amount) <= 0) return;
 
+    const parsedAmount = Number(parseFloat(amount).toFixed(2));
+
+    if (type === 'expense') {
+      const selectedAccount = accounts.find(a => a.id === accId);
+      if (selectedAccount) {
+        const projectedBalance = selectedAccount.balance - parsedAmount;
+        if (projectedBalance < 0) {
+          setPendingTx({
+            description: desc,
+            amount: parsedAmount,
+            category,
+            type,
+            accountId: accId,
+            currentBalance: selectedAccount.balance,
+          });
+          setShowBalanceWarning(true);
+          return;
+        }
+      }
+    }
+
     addTransaction({
       description: desc,
-      amount: Number(parseFloat(amount).toFixed(2)),
+      amount: parsedAmount,
       category: type === 'income' ? 'Income' : category,
       type,
       accountId: accId,
       date: new Date().toISOString().split('T')[0]
-    });
+    }, auth.userId ?? undefined);
 
+    setDesc('');
+    setAmount('');
+  };
+
+  const handleProceedWithQuickTx = () => {
+    if (!pendingTx) return;
+
+    addTransaction({
+      description: pendingTx.description,
+      amount: pendingTx.amount,
+      category: pendingTx.type === 'income' ? 'Income' : pendingTx.category,
+      type: pendingTx.type,
+      accountId: pendingTx.accountId,
+      date: new Date().toISOString().split('T')[0]
+    }, auth.userId ?? undefined);
+
+    setShowBalanceWarning(false);
+    setPendingTx(null);
     setDesc('');
     setAmount('');
   };
@@ -318,7 +376,19 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
       default: return <Sparkles className={cls} />;
     }
   };
-
+  // 👇 TEMP DEBUG
+console.table(
+  goals.map(g => ({
+    name: g.name,
+    current: g.currentAmount,
+    target: g.targetAmount,
+    status: g.status,
+    progress:
+      g.targetAmount > 0
+        ? Math.round((g.currentAmount / g.targetAmount) * 100)
+        : 0,
+  }))
+);
   return (
     <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
       
@@ -712,23 +782,41 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                     Continuous capital outflow telemetry
                   </span>
                 </div>
-                <div className="bg-[#C084FC] border-2 border-black px-2 py-0.5 font-mono text-xs font-bold text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
-                  ₹{(() => {
-                    const activeSubsList = subscriptions.filter(s => s.active ?? s.isActive ?? true);
-                    const totalMonthly = activeSubsList.reduce((sum, s) => {
-                      const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-                      if (cycle === 'yearly') {
-                        return sum + (s.amount / 12);
-                      }
-                      return sum + s.amount;
-                    }, 0);
-                    return totalMonthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  })()}/mo recurring
+                <div className="flex gap-1.5">
+                  <div className="bg-[#C084FC] border-2 border-black px-2 py-0.5 font-mono text-xs font-bold text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
+                    {(() => {
+                      const activeSubsList = subscriptions.filter(s => s.active ?? s.isActive ?? true);
+                      const totalMonthly = activeSubsList.reduce((sum, s) => {
+                        const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
+                        if (cycle === 'yearly') return sum + (s.amount / 12);
+                        return sum + s.amount;
+                      }, 0);
+                      const totalAnnual = activeSubsList.reduce((sum, s) => {
+                        const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
+                        if (cycle === 'yearly') return sum + s.amount;
+                        return sum + (s.amount * 12);
+                      }, 0);
+                      return (
+                        <div className="flex flex-col items-end">
+                          <span>Monthly: ₹{totalMonthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-[8px] opacity-80">Annual: ₹{totalAnnual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 mb-3 max-h-[140px] overflow-y-auto pr-1">
+              <div className="flex flex-col gap-3 mb-3 max-h-[300px] overflow-y-auto pr-1">
                 {subscriptions.filter(s => s.active ?? s.isActive ?? true).map((sub) => {
+                  const svcName = sub.service_name || sub.name || '';
+                  const cycle = sub.billing_cycle || (sub.frequency === 'annual' ? 'yearly' : 'monthly') || 'monthly';
+                  const renewalDate = sub.renewal_date || sub.nextBillingDate || '';
+                  const isActive = sub.active ?? sub.isActive ?? true;
+                  const subColor = sub.color || '#C084FC';
+                  const vault = accounts.find(a => a.id === (sub.payment_account || sub.accountId));
+                  const linkedPm = paymentMethods.find(pm => pm.accountId === (sub.payment_account || sub.accountId));
+
                   const getSubEmoji = (iconName?: string) => {
                     switch (iconName) {
                       case 'Tv': return '📺';
@@ -740,35 +828,115 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                       default: return '💳';
                     }
                   };
+
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const renewalDateObj = new Date(renewalDate);
+                  renewalDateObj.setHours(0, 0, 0, 0);
+                  const diffTime = renewalDateObj.getTime() - today.getTime();
+                  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                  const cycleDays = cycle === 'yearly' ? 365 : 30;
+                  const lastRenewal = new Date(renewalDateObj);
+                  lastRenewal.setDate(lastRenewal.getDate() - cycleDays);
+                  const daysElapsed = Math.round((today.getTime() - lastRenewal.getTime()) / (1000 * 60 * 60 * 24));
+                  const progressPct = Math.min(100, Math.max(0, (daysElapsed / cycleDays) * 100));
+
+                  let renewalLabel: string;
+                  let renewalColor: string;
+                  let progressColor: string;
+                  if (diffDays < 0) {
+                    renewalLabel = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
+                    renewalColor = 'text-red-600';
+                    progressColor = '#FF6B6B';
+                  } else if (diffDays === 0) {
+                    renewalLabel = 'Renews Today';
+                    renewalColor = 'text-orange-600';
+                    progressColor = '#FB923C';
+                  } else if (diffDays === 1) {
+                    renewalLabel = 'Renews Tomorrow';
+                    renewalColor = 'text-orange-600';
+                    progressColor = '#FB923C';
+                  } else if (diffDays <= 7) {
+                    renewalLabel = `⚠ Renews in ${diffDays} days`;
+                    renewalColor = 'text-amber-600';
+                    progressColor = '#FFDE4D';
+                  } else {
+                    renewalLabel = `🔄 Renews in ${diffDays} days`;
+                    renewalColor = 'text-green-600';
+                    progressColor = '#4ADE80';
+                  }
+
+                  const nextChargeDate = new Date(renewalDate);
+                  const chargeFormatted = nextChargeDate.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  }).replace(/ /g, ' ');
+
                   return (
-                    <div key={sub.id} className="flex items-center justify-between text-xs font-mono border-b border-gray-50 pb-1.5 last:border-b-0 last:pb-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm select-none">{getSubEmoji(sub.icon)}</span>
-                        <span className="font-bold text-black">{sub.service_name || sub.name}</span>
-                        {sub.auto_debit && (
-                          <span className="bg-[#4ADE80]/20 text-[#22c55e] border border-[#22c55e]/30 px-1 text-[7px] font-bold uppercase rounded-sm">
-                            AUTO
+                    <div key={sub.id} className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-9 h-9 border-2 border-black flex items-center justify-center text-lg shrink-0 shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]"
+                          style={{ backgroundColor: subColor }}
+                        >
+                          {getSubEmoji(sub.icon)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-display text-sm font-bold text-black truncate">{svcName}</span>
+                            {isActive ? (
+                              <span className="font-mono text-[8px] bg-[#4ADE80] text-black px-1 py-0.5 font-bold border border-black leading-none">🟢 ACTIVE</span>
+                            ) : (
+                              <span className="font-mono text-[8px] bg-gray-300 text-black px-1 py-0.5 font-bold border border-black leading-none">⚪ PAUSED</span>
+                            )}
+                          </div>
+                          <div className="font-mono text-[11px] font-bold text-black mt-0.5">
+                            ₹{sub.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycle === 'yearly' ? 'year' : 'month'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={`mt-2 px-1.5 py-0.5 border border-black font-mono text-[9px] font-bold ${renewalColor} inline-block`}>
+                        {renewalLabel}
+                      </div>
+
+                      <div className="w-full h-2 border border-black bg-gray-100 mt-2">
+                        <div
+                          className="h-full transition-all"
+                          style={{ width: `${progressPct}%`, backgroundColor: progressColor }}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 font-mono text-[9px] text-gray-600">
+                        <span>
+                          Next Charge:{' '}
+                          <span className="font-bold text-black">{chargeFormatted}</span>
+                        </span>
+                        <span>
+                          Vault:{' '}
+                          <span className="font-bold text-black">{vault?.name || 'Direct'}</span>
+                        </span>
+                        {linkedPm && (
+                          <span className="col-span-2">
+                            Payment:{' '}
+                            <span className="font-bold text-black">{getPaymentMethodIcon(linkedPm.icon)} {linkedPm.name}</span>
                           </span>
                         )}
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold text-black">
-                          ₹{sub.amount.toLocaleString('en-IN')}/{sub.billing_cycle === 'yearly' || sub.frequency === 'annual' ? 'yr' : 'mo'}
-                        </span>
-                        <span className="text-[8px] text-gray-400 block">Next: {sub.renewal_date || sub.nextBillingDate}</span>
                       </div>
                     </div>
                   );
                 })}
                 {subscriptions.filter(s => s.active ?? s.isActive ?? true).length === 0 && (
-                  <div className="text-center py-2 text-gray-400 text-[10px] uppercase font-mono italic">
+                  <div className="text-center py-4 text-gray-400 text-[10px] uppercase font-mono italic">
                     No active subscriptions detected.
                   </div>
                 )}
               </div>
 
               {/* LIVE DATABASE TABLE VIEW REPRESENTATION */}
-              <div className="border border-black p-2 bg-gray-50 overflow-x-auto font-mono text-[9px] mt-1">
+              <div className="border border-black p-2 bg-gray-50 overflow-x-auto font-mono text-[9px]">
                 <div className="flex items-center justify-between mb-1 pb-1 border-b border-black/10">
                   <span className="font-bold text-black uppercase text-[8px] text-gray-500">
                     🗃️ DB VIEW: [dbo].[subscriptions_table]
@@ -802,6 +970,92 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Savings Goals */}
+            <div className="border-2 border-black p-3.5 bg-[#FFFDEB] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+              <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
+                Savings Goals
+              </span>
+
+              {goals.length === 0 ? (
+                <div className="text-center py-4 text-gray-400 text-[10px] uppercase font-mono italic">
+                  No savings goals set up yet.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-1">
+                  
+                  {goals.map((goal) => {
+                    const progress = goal.targetAmount > 0
+                      ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
+                      : 0;
+                    const statusColor = goal.status === 'completed' ? 'bg-[#4ADE80]'
+                      : goal.status === 'paused' ? 'bg-[#FB923C]'
+                      : 'bg-[#FFDE4D]';
+                    const statusLabel = goal.status === 'completed' ? 'COMPLETED'
+                      : goal.status === 'paused' ? 'PAUSED'
+                      : 'ACTIVE';
+
+                    return (
+                      <div key={goal.id} className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[11px] font-bold text-black truncate">
+                                {goal.name}
+                              </span>
+                              <span className={`text-[7px] font-mono font-bold uppercase px-1 py-0.5 border border-black ${statusColor}`}>
+                                {statusLabel}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                window.dispatchEvent(new CustomEvent('open-edit-goal', { detail: goal }));
+                              }}
+                              className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
+                              title="Edit goal"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <Pencil className="w-3 h-3 text-black" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`DELETE GOAL "${goal.name}"?`)) {
+                                  deleteGoal(goal.id);
+                                }
+                              }}
+                              className="p-1 border border-black bg-[#FF9F9F] hover:bg-red-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
+                              title="Delete goal"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <Trash2 className="w-3 h-3 text-black" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[9px] font-mono text-gray-600 mb-1">
+                          <span>₹{goal.currentAmount.toLocaleString('en-IN')} / ₹{goal.targetAmount.toLocaleString('en-IN')}</span>
+                          <span className="font-bold text-black">{progress}%</span>
+                        </div>
+
+                        <div className="w-full bg-gray-100 h-2 border border-black">
+                          <div
+                            className="bg-[#FFDE4D] h-full transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1.5 text-[8px] font-mono text-gray-500">
+                          <span>DEADLINE: {goal.deadline || 'N/A'}</span>
+                          {progress >= 100 && <span className="text-[#22c55e] font-bold">✓ TARGET REACHED</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Mission Objectives */}
@@ -864,36 +1118,100 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
               <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
                 Your Vaults
               </span>
-              
-              <div className="flex flex-col gap-2">
+
+              <div className="flex flex-col gap-3">
                 {accounts.map((acc) => {
-                  const maxBalance = Math.max(...accounts.map(a => Math.abs(a.balance)), 1);
-                  const getRelativeBlocks = (bal: number) => {
-                    if (bal <= 0) return '░';
-                    const ratio = bal / maxBalance;
-                    const count = Math.max(1, Math.round(Math.sqrt(ratio) * 10));
-                    return '█'.repeat(count);
-                  };
                   const change = getMonthlyChange(acc.id);
+                  const linkedPms = paymentMethods.filter(pm => pm.accountId === acc.id);
+                  const netWorth = Math.max(totalNetWorth, 1);
+                  const netWorthPct = Math.max(0, Math.min(100, (acc.balance / netWorth) * 100));
+                  const isNegative = acc.balance < 0;
 
                   return (
-                    <div key={acc.id} className="flex flex-col gap-0.5 border-b border-black/10 pb-1.5 last:border-b-0 last:pb-0">
-                      <div className="flex items-center justify-between font-mono text-[11px] text-black">
+                    <div
+                      key={acc.id}
+                      className={`border-2 border-black p-3.5 shadow-[3px_3px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_rgba(0,0,0,1)] ${
+                        isNegative ? 'bg-red-50' : 'bg-white'
+                      }`}
+                    >
+                      {/* Header Row: Icon + Name + Edit */}
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-sm select-none shrink-0">{getVaultEmoji(acc.type)}</span>
-                          <span className="font-bold truncate" title={acc.name}>{acc.name}</span>
+                          <span className="text-lg select-none shrink-0">{getVaultEmoji(acc.type)}</span>
+                          <span className="font-display font-bold text-xs text-black uppercase truncate" title={acc.name}>
+                            {acc.name}
+                          </span>
+                          {isNegative && (
+                            <span className="flex items-center gap-0.5 bg-red-200 border border-red-600 px-1 py-0.5 font-mono text-[8px] font-bold text-red-700 uppercase leading-none">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Overdrawn
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-bold">{formatINR(acc.balance)}</span>
-                          <span className="text-black font-black tracking-tighter select-none">{getRelativeBlocks(acc.balance)}</span>
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
+                          }}
+                          className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all shrink-0"
+                          title="Edit Vault"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <Pencil className="w-3 h-3 text-black" />
+                        </button>
+                      </div>
+
+                      {/* Large Balance */}
+                      <div className={`font-display text-2xl font-black leading-tight mb-2.5 ${
+                        isNegative ? 'text-red-600' : 'text-black'
+                      }`}>
+                        {formatINR(acc.balance)}
+                      </div>
+
+                      {/* Progress Bar: Balance / Total Net Worth */}
+                      <div className="mb-2.5">
+                        <div className="flex items-center justify-between text-[9px] font-mono text-gray-500 mb-1">
+                          <span className="font-bold uppercase">Net Worth Share</span>
+                          <span className="font-bold text-black">{netWorthPct.toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 h-2.5 border border-black overflow-hidden">
+                          <div
+                            className={`h-full border-r border-black transition-all ${
+                              isNegative ? 'bg-red-400' : 'bg-[#38BDF8]'
+                            }`}
+                            style={{ width: `${netWorthPct}%` }}
+                          />
                         </div>
                       </div>
-                      {change !== 0 && (
-                        <div className="flex justify-between items-center pl-5 text-[8px] font-mono">
-                          <span className="text-gray-500 uppercase">MONTHLY CHANGE:</span>
-                          <span className={change > 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                            {change > 0 ? '+' : ''}{formatINR(change)}
+
+                      {/* Monthly Change */}
+                      <div className="flex items-center gap-1 font-mono text-[10px] mb-2.5">
+                        <span className="text-gray-500 uppercase font-bold">Monthly:</span>
+                        {change > 0 ? (
+                          <span className="text-green-600 font-bold flex items-center gap-0.5">
+                            <ArrowUpRight className="w-3 h-3" /> +{formatINR(change)}
                           </span>
+                        ) : change < 0 ? (
+                          <span className="text-red-600 font-bold flex items-center gap-0.5">
+                            <ArrowDownRight className="w-3 h-3" /> -{formatINR(Math.abs(change))}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 font-bold flex items-center gap-0.5">
+                            ▬ No change
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Linked Payment Method Chips */}
+                      {linkedPms.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {linkedPms.map(pm => (
+                            <span
+                              key={pm.id}
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 border border-black text-[8px] font-mono font-bold text-purple-700 uppercase leading-none"
+                            >
+                              {getPaymentMethodIcon(pm.icon)} {pm.name}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -907,7 +1225,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                   className="font-mono text-[10px] font-black text-black hover:underline uppercase tracking-wider"
                   style={{ cursor: 'pointer' }}
                 >
-                  VIEW ALL →
+                  VAULT INDEX →
                 </button>
               </div>
             </div>
@@ -956,7 +1274,18 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                   <div key={acc.id} className="border-2 border-black bg-white p-4 shadow-[3px_3px_0px_rgba(0,0,0,1)] flex flex-col gap-3">
                     <div className="flex items-center gap-2 border-b-2 border-black pb-1.5">
                       <span className="text-xl select-none">{getVaultEmoji(acc.type)}</span>
-                      <span className="font-display font-black text-sm uppercase text-black">{acc.name}</span>
+                      <span className="font-display font-black text-sm uppercase text-black flex-1">{acc.name}</span>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
+                          setIsVaultModalOpen(false);
+                        }}
+                        className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 active:translate-y-[1px] transition-all"
+                        title="Edit Vault"
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-black" />
+                      </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono">
@@ -976,7 +1305,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
                         <div className="flex flex-wrap gap-1">
                           {linked.map(pm => (
                             <span key={pm.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 border border-black text-[9px] font-bold text-purple-700 uppercase">
-                              {getPaymentMethodEmoji(pm.type)} {pm.name}
+                              {getPaymentMethodIcon(pm.icon)} {pm.name}
                             </span>
                           ))}
                         </div>
@@ -1004,6 +1333,19 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
         </div>
       )}
 
+      {pendingTx && (
+        <LowBalanceWarning
+          isOpen={showBalanceWarning}
+          onClose={() => {
+            setShowBalanceWarning(false);
+            setPendingTx(null);
+          }}
+          onConfirm={handleProceedWithQuickTx}
+          currentBalance={pendingTx.currentBalance}
+          transactionAmount={pendingTx.amount}
+          projectedBalance={pendingTx.currentBalance - pendingTx.amount}
+        />
+      )}
     </div>
   );
 }

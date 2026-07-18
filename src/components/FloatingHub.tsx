@@ -17,11 +17,15 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
+import { useAuthContext } from '../providers/AuthProvider';
+import LowBalanceWarning from './LowBalanceWarning';
+import type { Goal, Subscription } from '../types';
 
 type ModalType = 'expense' | 'income' | 'goal' | 'transfer' | 'subscription' | 'payment_method' | null;
 
 export default function FloatingHub() {
-  const { accounts, paymentMethods, addTransaction, addGoal, addSubscription, addPaymentMethod } = useFinanceStore();
+  const auth = useAuthContext();
+  const { accounts, paymentMethods, addTransaction, addGoal, updateGoal, addSubscription, updateSubscription, addPaymentMethod } = useFinanceStore();
   const [isOpen, setIsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -44,6 +48,42 @@ export default function FloatingHub() {
     return () => window.removeEventListener('open-add-transaction', handleOpenAdd);
   }, [accounts]);
 
+  React.useEffect(() => {
+    const handleEditGoal = (e: Event) => {
+      const goal = (e as CustomEvent).detail as Goal;
+      setEditingGoal(goal);
+      setGoalName(goal.name);
+      setGoalTarget(String(goal.targetAmount));
+      setGoalCurrentAmount(String(goal.currentAmount));
+      setGoalDeadline(goal.deadline);
+      setGoalStatus(goal.status);
+      setError(null);
+      setActiveModal('goal');
+    };
+    window.addEventListener('open-edit-goal', handleEditGoal);
+    return () => window.removeEventListener('open-edit-goal', handleEditGoal);
+  }, []);
+
+  React.useEffect(() => {
+    const handleEditSubscription = (e: Event) => {
+      const sub = (e as CustomEvent).detail as Subscription;
+      setEditingSubscription(sub);
+      setSubServiceName(sub.service_name || sub.name || '');
+      setSubAmount(String(sub.amount));
+      setSubBillingCycle(sub.billing_cycle === 'yearly' ? 'yearly' : 'monthly');
+      setSubCategory(sub.category || 'Utilities');
+      setSubPaymentAccount(sub.payment_account || sub.accountId || accounts[0]?.id || '');
+      setSubRenewalDate(sub.renewal_date || sub.nextBillingDate || '');
+      setSubAutoDebit(sub.auto_debit ?? true);
+      setSubIcon(sub.icon || 'CreditCard');
+      setSubColor(sub.color || '#C084FC');
+      setError(null);
+      setActiveModal('subscription');
+    };
+    window.addEventListener('open-edit-subscription', handleEditSubscription);
+    return () => window.removeEventListener('open-edit-subscription', handleEditSubscription);
+  }, [accounts]);
+
   // Form States
   // Expense/Income
   const [description, setDescription] = useState('');
@@ -56,6 +96,10 @@ export default function FloatingHub() {
   const [goalName, setGoalName] = useState('');
   const [goalTarget, setGoalTarget] = useState('');
   const [goalDeadline, setGoalDeadline] = useState('');
+  const [goalCurrentAmount, setGoalCurrentAmount] = useState('');
+  const [goalStatus, setGoalStatus] = useState<'active' | 'completed' | 'paused'>('active');
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
 
   // Transfer
   const [fromAccountId, setFromAccountId] = useState(accounts[0]?.id || '');
@@ -74,6 +118,18 @@ export default function FloatingHub() {
 
   // Validation errors
   const [error, setError] = useState<string | null>(null);
+
+  // Low balance warning state
+  const [showBalanceWarning, setShowBalanceWarning] = useState(false);
+  const [pendingExpense, setPendingExpense] = useState<{
+    amount: number;
+    description: string;
+    category: string;
+    accountId: string;
+    paymentMethodId?: string;
+    accountName: string;
+    currentBalance: number;
+  } | null>(null);
 
   const triggerToast = (msg: string) => {
     setNotification(msg);
@@ -100,6 +156,10 @@ export default function FloatingHub() {
     setGoalName('');
     setGoalTarget('');
     setGoalDeadline('');
+    setGoalCurrentAmount('');
+    setGoalStatus('active');
+    setEditingGoal(null);
+    setEditingSubscription(null);
     setFromAccountId(accounts[0]?.id || '');
     // Default "to" account to a different one if available
     const otherAccount = accounts.find(a => a.id !== accounts[0]?.id);
@@ -120,6 +180,8 @@ export default function FloatingHub() {
   const closeModal = () => {
     setActiveModal(null);
     setError(null);
+    setEditingGoal(null);
+    setEditingSubscription(null);
   };
 
   // Submission Handlers
@@ -139,6 +201,24 @@ export default function FloatingHub() {
       return;
     }
 
+    const selectedAccount = accounts.find(a => a.id === accountId);
+    if (selectedAccount) {
+      const projectedBalance = selectedAccount.balance - parsedAmount;
+      if (projectedBalance < 0) {
+        setPendingExpense({
+          amount: parsedAmount,
+          description,
+          category,
+          accountId,
+          paymentMethodId: paymentMethodId || undefined,
+          accountName: selectedAccount.name,
+          currentBalance: selectedAccount.balance,
+        });
+        setShowBalanceWarning(true);
+        return;
+      }
+    }
+
     addTransaction({
       date: new Date().toISOString().split('T')[0],
       amount: parsedAmount,
@@ -147,7 +227,7 @@ export default function FloatingHub() {
       type: 'expense',
       accountId,
       paymentMethodId: paymentMethodId || undefined
-    });
+    }, auth.userId ?? undefined);
 
     const accountName = accounts.find(a => a.id === accountId)?.name || 'VAULT';
     triggerToast(`EXPENSE OF ₹${parsedAmount.toLocaleString('en-IN')} LOGGED TO ${accountName.toUpperCase()} SECURELY.`);
@@ -178,7 +258,7 @@ export default function FloatingHub() {
       type: 'income',
       accountId,
       paymentMethodId: paymentMethodId || undefined
-    });
+    }, auth.userId ?? undefined);
 
     const accountName = accounts.find(a => a.id === accountId)?.name || 'VAULT';
     triggerToast(`INFLOW OF ₹${parsedAmount.toLocaleString('en-IN')} DEPOSITED TO ${accountName.toUpperCase()} SECURELY.`);
@@ -201,16 +281,39 @@ export default function FloatingHub() {
       return;
     }
 
-    addGoal({
-      name: goalName,
-      targetAmount: parsedTarget,
-      currentAmount: 0,
-      deadline: goalDeadline,
-      category: 'Savings',
-      status: 'active'
-    });
+    if (editingGoal) {
+      const parsedCurrent = parseFloat(goalCurrentAmount);
+      if (isNaN(parsedCurrent) || parsedCurrent < 0) {
+        setError('CURRENT AMOUNT CANNOT BE NEGATIVE.');
+        return;
+      }
 
-    triggerToast(`NEW GOAL "${goalName.toUpperCase()}" SAVED WITH ₹${parsedTarget.toLocaleString('en-IN')} TARGET.`);
+      // BONUS: auto-complete if current >= target
+      const finalStatus = parsedCurrent >= parsedTarget ? 'completed' : goalStatus;
+
+      updateGoal({
+        ...editingGoal,
+        name: goalName,
+        targetAmount: parsedTarget,
+        currentAmount: parsedCurrent,
+        deadline: goalDeadline,
+        status: finalStatus,
+      });
+
+      triggerToast(`GOAL "${goalName.toUpperCase()}" UPDATED SUCCESSFULLY.`);
+    } else {
+      addGoal({
+        name: goalName,
+        targetAmount: parsedTarget,
+        currentAmount: 0,
+        deadline: goalDeadline,
+        category: 'Savings',
+        status: 'active'
+      }, auth.userId ?? undefined);
+
+      triggerToast(`NEW GOAL "${goalName.toUpperCase()}" SAVED WITH ₹${parsedTarget.toLocaleString('en-IN')} TARGET.`);
+    }
+
     closeModal();
   };
 
@@ -242,7 +345,7 @@ export default function FloatingHub() {
       category: 'Transfer',
       type: 'expense',
       accountId: fromAccountId
-    });
+    }, auth.userId ?? undefined);
 
     // Add destination credit
     addTransaction({
@@ -252,7 +355,7 @@ export default function FloatingHub() {
       category: 'Transfer',
       type: 'income',
       accountId: toAccountId
-    });
+    }, auth.userId ?? undefined);
 
     triggerToast(`INTER-VAULT TRANSFER OF ₹${parsedAmount.toLocaleString('en-IN')} EXECUTED SUCCESSFULLY.`);
     closeModal();
@@ -274,20 +377,56 @@ export default function FloatingHub() {
       return;
     }
 
-    addSubscription({
-      service_name: subServiceName,
-      amount: parsedAmount,
-      billing_cycle: subBillingCycle,
-      category: subCategory,
-      payment_account: subPaymentAccount,
-      renewal_date: subRenewalDate,
-      auto_debit: subAutoDebit,
-      active: true,
-      icon: subIcon,
-      color: subColor
-    });
+    if (editingSubscription) {
+      updateSubscription({
+        ...editingSubscription,
+        service_name: subServiceName,
+        amount: parsedAmount,
+        billing_cycle: subBillingCycle,
+        category: subCategory,
+        payment_account: subPaymentAccount,
+        renewal_date: subRenewalDate,
+        auto_debit: subAutoDebit,
+        icon: subIcon,
+        color: subColor,
+      });
+      triggerToast(`SUBSCRIPTION "${subServiceName.toUpperCase()}" UPDATED SUCCESSFULLY.`);
+    } else {
+      addSubscription({
+        service_name: subServiceName,
+        amount: parsedAmount,
+        billing_cycle: subBillingCycle,
+        category: subCategory,
+        payment_account: subPaymentAccount,
+        renewal_date: subRenewalDate,
+        auto_debit: subAutoDebit,
+        active: true,
+        icon: subIcon,
+        color: subColor
+      }, auth.userId ?? undefined);
 
-    triggerToast(`SUBSCRIPTION "${subServiceName.toUpperCase()}" ADDED SECURELY.`);
+      triggerToast(`SUBSCRIPTION "${subServiceName.toUpperCase()}" ADDED SECURELY.`);
+    }
+    closeModal();
+  };
+
+  const handleProceedWithExpense = () => {
+    if (!pendingExpense) return;
+    const { amount: parsedAmount, description, category, accountId, paymentMethodId, accountName } = pendingExpense;
+
+    addTransaction({
+      date: new Date().toISOString().split('T')[0],
+      amount: parsedAmount,
+      description,
+      category,
+      type: 'expense',
+      accountId,
+      paymentMethodId
+    }, auth.userId ?? undefined);
+
+    triggerToast(`EXPENSE OF ₹${parsedAmount.toLocaleString('en-IN')} LOGGED TO ${accountName.toUpperCase()} SECURELY.`);
+    setShowBalanceWarning(false);
+    setPendingExpense(null);
     closeModal();
   };
 
@@ -489,9 +628,9 @@ export default function FloatingHub() {
                   <h3 className="font-display text-xl font-black text-black uppercase tracking-tight">
                     {activeModal === 'expense' && 'LOG NEW EXPENSE'}
                     {activeModal === 'income' && 'LOG INFLOW INCOME'}
-                    {activeModal === 'goal' && 'SET SAVINGS TARGET'}
+                    {activeModal === 'goal' && (editingGoal ? 'EDIT GOAL' : 'SET SAVINGS TARGET')}
                     {activeModal === 'transfer' && 'INTER-VAULT TRANSFER'}
-                    {activeModal === 'subscription' && 'ADD SUBSCRIPTION'}
+                    {activeModal === 'subscription' && (editingSubscription ? 'EDIT SUBSCRIPTION' : 'ADD SUBSCRIPTION')}
                   </h3>
                 </div>
                 <button
@@ -750,6 +889,63 @@ export default function FloatingHub() {
                       />
                     </div>
 
+                    {editingGoal ? (
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          CURRENT AMOUNT (₹)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 40000"
+                          value={goalCurrentAmount}
+                          onChange={(e) => setGoalCurrentAmount(e.target.value)}
+                          className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          TARGET DEADLINE
+                        </label>
+                        <input
+                          type="date"
+                          value={goalDeadline}
+                          onChange={(e) => setGoalDeadline(e.target.value)}
+                          className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {editingGoal ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          TARGET DEADLINE
+                        </label>
+                        <input
+                          type="date"
+                          value={goalDeadline}
+                          onChange={(e) => setGoalDeadline(e.target.value)}
+                          className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                          STATUS
+                        </label>
+                        <select
+                          value={goalStatus}
+                          onChange={(e) => setGoalStatus(e.target.value as 'active' | 'completed' | 'paused')}
+                          className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        >
+                          <option value="active">ACTIVE</option>
+                          <option value="completed">COMPLETED</option>
+                          <option value="paused">PAUSED</option>
+                        </select>
+                      </div>
+                    </div>
+                  ) : (
                     <div>
                       <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
                         TARGET DEADLINE
@@ -761,7 +957,7 @@ export default function FloatingHub() {
                         className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
                       />
                     </div>
-                  </div>
+                  )}
 
                   <div className="pt-2 flex gap-3">
                     <button
@@ -777,7 +973,7 @@ export default function FloatingHub() {
                       className="w-1/2 bg-[#FFDE4D] hover:bg-yellow-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
-                      MOUNT TARGET
+                      {editingGoal ? 'SAVE GOAL' : 'MOUNT TARGET'}
                     </button>
                   </div>
                 </form>
@@ -982,6 +1178,36 @@ export default function FloatingHub() {
                     </div>
                   </div>
 
+                  {editingSubscription && (
+                    <div>
+                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                        STATUS
+                      </label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditingSubscription({ ...editingSubscription, active: true })}
+                          className={`py-2 border-2 border-black font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none ${
+                            editingSubscription.active ? 'bg-[#4ADE80] text-black' : 'bg-white text-gray-700'
+                          }`}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          🟢 ACTIVE
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingSubscription({ ...editingSubscription, active: false })}
+                          className={`py-2 border-2 border-black font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none ${
+                            !editingSubscription.active ? 'bg-gray-300 text-black' : 'bg-white text-gray-700'
+                          }`}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          ⚪ PAUSED
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
                       <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
@@ -1045,7 +1271,7 @@ export default function FloatingHub() {
                       className="w-1/2 bg-[#C084FC] hover:bg-purple-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
-                      SECURE SUBSCRIPTION
+                      {editingSubscription ? 'SAVE SUBSCRIPTION' : 'SECURE SUBSCRIPTION'}
                     </button>
                   </div>
                 </form>
@@ -1054,6 +1280,20 @@ export default function FloatingHub() {
           </div>
         )}
       </AnimatePresence>
+
+      {pendingExpense && (
+        <LowBalanceWarning
+          isOpen={showBalanceWarning}
+          onClose={() => {
+            setShowBalanceWarning(false);
+            setPendingExpense(null);
+          }}
+          onConfirm={handleProceedWithExpense}
+          currentBalance={pendingExpense.currentBalance}
+          transactionAmount={pendingExpense.amount}
+          projectedBalance={pendingExpense.currentBalance - pendingExpense.amount}
+        />
+      )}
     </>
   );
 }

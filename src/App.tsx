@@ -2,27 +2,215 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Navigation from './components/Navigation';
 import CommandCenter from './components/CommandCenter';
 import Ledger from './components/Ledger';
-import Insights from './components/Insights';
+import Journal from './components/Journal';
 import Wrapped from './components/Wrapped';
 import Settings from './components/Settings';
 import FloatingHub from './components/FloatingHub';
 import { useFinanceStore } from './store';
+import { useAuthContext } from './providers/AuthProvider';
+import { VaultRepository } from './lib/db/repositories';
+import { TransactionRepository } from './lib/db/repositories/TransactionRepository';
+import { PaymentMethodRepository } from './lib/db/repositories/PaymentMethodRepository';
+import { GoalRepository } from './lib/db/repositories/GoalRepository';
+import { SubscriptionRepository } from './lib/db/repositories/SubscriptionRepository';
+import { BudgetRepository } from './lib/db/repositories/BudgetRepository';
+import { AchievementRepository } from './lib/db/repositories/AchievementRepository';
+import { vaultRowToAccount } from './lib/db/types';
+import { Account } from './types';
+import { transactionRowToTransaction } from './lib/db/transactionTypes';
+import { paymentMethodRowToPaymentMethod } from './lib/db/paymentMethodTypes';
+import { goalRowToGoal } from './lib/db/goalTypes';
+import { subscriptionRowToSubscription } from './lib/db/subscriptionTypes';
+import { budgetRowToBudget } from './lib/db/budgetTypes';
+import { mergeAchievements } from './lib/db/achievementTypes';
+
+const vaultRepo = new VaultRepository();
+const transactionRepo = new TransactionRepository();
+const paymentMethodRepo = new PaymentMethodRepository();
+const goalRepo = new GoalRepository();
+const subscriptionRepo = new SubscriptionRepository();
+const budgetRepo = new BudgetRepository();
+const achievementRepo = new AchievementRepository();
 
 export default function App() {
+  const auth = useAuthContext();
   const [activeTab, setActiveTab] = useState<string>('command_center');
-  const { preferences, transactions, recalculateStreak } = useFinanceStore();
+  const [pendingVaultEdit, setPendingVaultEdit] = useState<Account | null>(null);
+  const { preferences, transactions, recalculateStreak, isVaultsHydrated, setAccounts, setVaultsHydrated, isTransactionsHydrated, setTransactions, setTransactionsHydrated, isPaymentMethodsHydrated, setPaymentMethods, setPaymentMethodsHydrated, isGoalsHydrated, setGoals, setGoalsHydrated, isSubscriptionsHydrated, setSubscriptions, setSubscriptionsHydrated, isBudgetsHydrated, setBudgets, setBudgetsHydrated, isAchievementsHydrated, setAchievements, setAchievementsHydrated } = useFinanceStore();
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [lastNotificationDate, setLastNotificationDate] = useState<string>('');
 
   useEffect(() => {
     recalculateStreak();
   }, [recalculateStreak]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isVaultsHydrated) return;
+
+    console.log("HYDRATION START");
+
+    (async () => {
+      try {
+        const vaults = await vaultRepo.getVaults(userId);
+        console.log("VAULTS FETCHED", vaults.length);
+
+        if (vaults.length > 0) {
+          setAccounts(vaults.map(vaultRowToAccount));
+        }
+      } catch (err) {
+        console.error("VAULT HYDRATION FAILED", err);
+      } finally {
+        setVaultsHydrated(true);
+        console.log("HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isVaultsHydrated, setAccounts, setVaultsHydrated]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isTransactionsHydrated) return;
+
+    console.log("TRANSACTION HYDRATION START");
+
+    (async () => {
+      try {
+        const rows = await transactionRepo.getTransactions(userId);
+        console.log("TRANSACTIONS FETCHED", rows.length);
+
+        if (rows.length > 0) {
+          setTransactions(rows.map(transactionRowToTransaction));
+        }
+      } catch (err) {
+        console.error("TRANSACTION HYDRATION FAILED", err);
+      } finally {
+        setTransactionsHydrated(true);
+        console.log("TRANSACTION HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isTransactionsHydrated, setTransactions, setTransactionsHydrated]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isPaymentMethodsHydrated) return;
+
+    console.log("PAYMENT METHOD HYDRATION START");
+
+    (async () => {
+      try {
+        const rows = await paymentMethodRepo.getPaymentMethods(userId);
+        console.log("PAYMENT METHODS FETCHED", rows.length);
+
+        if (rows.length > 0) {
+          setPaymentMethods(rows.map(paymentMethodRowToPaymentMethod));
+        }
+      } catch (err) {
+        console.error("PAYMENT METHOD HYDRATION FAILED", err);
+      } finally {
+        setPaymentMethodsHydrated(true);
+        console.log("PAYMENT METHOD HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isPaymentMethodsHydrated, setPaymentMethods, setPaymentMethodsHydrated]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isGoalsHydrated) return;
+
+    console.log("GOAL HYDRATION START");
+
+    (async () => {
+      try {
+        const rows = await goalRepo.getGoals(userId);
+        console.log("GOALS FETCHED", rows.length);
+
+        if (rows.length > 0) {
+          setGoals(rows.map(goalRowToGoal));
+        }
+      } catch (err) {
+        console.error("GOAL HYDRATION FAILED", err);
+      } finally {
+        setGoalsHydrated(true);
+        console.log("GOAL HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isGoalsHydrated, setGoals, setGoalsHydrated]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isSubscriptionsHydrated) return;
+
+    console.log("SUBSCRIPTION HYDRATION START");
+
+    (async () => {
+      try {
+        const rows = await subscriptionRepo.getSubscriptions(userId);
+        console.log("SUBSCRIPTIONS FETCHED", rows.length);
+
+        if (rows.length > 0) {
+          setSubscriptions(rows.map(subscriptionRowToSubscription));
+        }
+      } catch (err) {
+        console.error("SUBSCRIPTION HYDRATION FAILED", err);
+      } finally {
+        setSubscriptionsHydrated(true);
+        console.log("SUBSCRIPTION HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isSubscriptionsHydrated, setSubscriptions, setSubscriptionsHydrated]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isBudgetsHydrated) return;
+
+    console.log("BUDGET HYDRATION START");
+
+    (async () => {
+      try {
+        const rows = await budgetRepo.getBudgets(userId);
+        console.log("BUDGETS FETCHED", rows.length);
+
+        if (rows.length > 0) {
+          setBudgets(rows.map(budgetRowToBudget));
+        }
+      } catch (err) {
+        console.error("BUDGET HYDRATION FAILED", err);
+      } finally {
+        setBudgetsHydrated(true);
+        console.log("BUDGET HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isBudgetsHydrated, setBudgets, setBudgetsHydrated]);
+
+  useEffect(() => {
+    const userId = auth.userId;
+    if (!userId || isAchievementsHydrated) return;
+
+    console.log("ACHIEVEMENT HYDRATION START");
+
+    (async () => {
+      try {
+        const [achievementRows, userAchievementRows] = await Promise.all([
+          achievementRepo.getAchievements(),
+          achievementRepo.getUserAchievements(userId),
+        ]);
+        console.log("ACHIEVEMENTS FETCHED", achievementRows.length);
+        console.log("USER ACHIEVEMENTS FETCHED", userAchievementRows.length);
+
+        setAchievements(mergeAchievements(achievementRows, userAchievementRows));
+      } catch (err) {
+        console.error("ACHIEVEMENT HYDRATION FAILED", err);
+      } finally {
+        setAchievementsHydrated(true);
+        console.log("ACHIEVEMENT HYDRATION COMPLETE");
+      }
+    })();
+  }, [auth.userId, isAchievementsHydrated, setAchievements, setAchievementsHydrated]);
 
   // Request browser notification permission if enabled and default
   useEffect(() => {
@@ -32,6 +220,8 @@ export default function App() {
       }
     }
   }, [preferences?.reminderEnabled]);
+
+
 
   // Daily Reminder background checker
   useEffect(() => {
@@ -87,6 +277,17 @@ export default function App() {
     return () => window.removeEventListener('trigger-test-reminder', handleTestReminder);
   }, []);
 
+  // Listen for vault edit requests (dispatched from Command Center vault cards)
+  useEffect(() => {
+    const handleEditVault = (e: Event) => {
+      const acc = (e as CustomEvent).detail as Account;
+      setPendingVaultEdit(acc);
+      setActiveTab('settings');
+    };
+    window.addEventListener('open-edit-vault', handleEditVault);
+    return () => window.removeEventListener('open-edit-vault', handleEditVault);
+  }, []);
+
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'command_center':
@@ -94,11 +295,11 @@ export default function App() {
       case 'ledger':
         return <Ledger />;
       case 'insights':
-        return <Insights />;
+        return <Journal />;
       case 'wrapped':
         return <Wrapped />;
       case 'settings':
-        return <Settings />;
+        return <Settings pendingVaultEdit={pendingVaultEdit} onClearPendingVaultEdit={() => setPendingVaultEdit(null)} />;
       default:
         return <CommandCenter onNavigateToLedger={() => setActiveTab('ledger')} />;
     }

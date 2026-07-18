@@ -1,0 +1,54 @@
+import { createContext, useContext, type ReactNode } from 'react';
+import { useAuth, type AuthState } from '../hooks/useAuth';
+
+const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const auth = useAuth();
+
+  if (auth.loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="font-mono text-xs uppercase tracking-widest text-gray-500">
+            Initializing...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (auth.error) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center p-4">
+        <div className="border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md text-center">
+          <p className="font-bold text-lg mb-2">Connection Error</p>
+          <p className="font-mono text-xs text-gray-600 mb-4">
+            {auth.error.message}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 border-3 border-black bg-[#FFDE4D] font-mono text-xs uppercase font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={auth}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuthContext(): AuthState {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuthContext must be used within an AuthProvider');
+  }
+  return context;
+}
