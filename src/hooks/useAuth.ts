@@ -36,12 +36,7 @@ export function useAuth(): AuthState {
       return;
     }
 
-    console.log("CREATING ANONYMOUS USER");
-
     const anonymousUser = await signInAnonymously();
-
-    console.log(anonymousUser);
-    console.log("USER ID:", anonymousUser.id);
 
     if (cancelled) return;
 
@@ -49,8 +44,6 @@ export function useAuth(): AuthState {
     setLoading(false);
 
   } catch (err) {
-    console.error("AUTH ERROR:", err);
-
     if (cancelled) return;
 
     setError(

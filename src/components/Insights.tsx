@@ -96,7 +96,6 @@ export default function Insights() {
         throw new Error(data.error || 'Unknown server error');
       }
     } catch (err: any) {
-      console.error(err);
       setError(err.message || 'Network failure communicating with COMMON CENTS server');
     } finally {
       clearInterval(logInterval);

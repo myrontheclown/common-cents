@@ -53,13 +53,9 @@ export default function App() {
     const userId = auth.userId;
     if (!userId || isVaultsHydrated) return;
 
-    console.log("HYDRATION START");
-
     (async () => {
       try {
         const vaults = await vaultRepo.getVaults(userId);
-        console.log("VAULTS FETCHED", vaults.length);
-
         if (vaults.length > 0) {
           setAccounts(vaults.map(vaultRowToAccount));
         }
@@ -67,7 +63,6 @@ export default function App() {
         console.error("VAULT HYDRATION FAILED", err);
       } finally {
         setVaultsHydrated(true);
-        console.log("HYDRATION COMPLETE");
       }
     })();
   }, [auth.userId, isVaultsHydrated, setAccounts, setVaultsHydrated]);
@@ -76,13 +71,9 @@ export default function App() {
     const userId = auth.userId;
     if (!userId || isTransactionsHydrated) return;
 
-    console.log("TRANSACTION HYDRATION START");
-
     (async () => {
       try {
         const rows = await transactionRepo.getTransactions(userId);
-        console.log("TRANSACTIONS FETCHED", rows.length);
-
         if (rows.length > 0) {
           setTransactions(rows.map(transactionRowToTransaction));
         }
@@ -90,7 +81,6 @@ export default function App() {
         console.error("TRANSACTION HYDRATION FAILED", err);
       } finally {
         setTransactionsHydrated(true);
-        console.log("TRANSACTION HYDRATION COMPLETE");
       }
     })();
   }, [auth.userId, isTransactionsHydrated, setTransactions, setTransactionsHydrated]);
@@ -99,13 +89,9 @@ export default function App() {
     const userId = auth.userId;
     if (!userId || isPaymentMethodsHydrated) return;
 
-    console.log("PAYMENT METHOD HYDRATION START");
-
     (async () => {
       try {
         const rows = await paymentMethodRepo.getPaymentMethods(userId);
-        console.log("PAYMENT METHODS FETCHED", rows.length);
-
         if (rows.length > 0) {
           setPaymentMethods(rows.map(paymentMethodRowToPaymentMethod));
         }
@@ -113,7 +99,6 @@ export default function App() {
         console.error("PAYMENT METHOD HYDRATION FAILED", err);
       } finally {
         setPaymentMethodsHydrated(true);
-        console.log("PAYMENT METHOD HYDRATION COMPLETE");
       }
     })();
   }, [auth.userId, isPaymentMethodsHydrated, setPaymentMethods, setPaymentMethodsHydrated]);
@@ -122,13 +107,9 @@ export default function App() {
     const userId = auth.userId;
     if (!userId || isGoalsHydrated) return;
 
-    console.log("GOAL HYDRATION START");
-
     (async () => {
       try {
         const rows = await goalRepo.getGoals(userId);
-        console.log("GOALS FETCHED", rows.length);
-
         if (rows.length > 0) {
           setGoals(rows.map(goalRowToGoal));
         }
@@ -136,7 +117,6 @@ export default function App() {
         console.error("GOAL HYDRATION FAILED", err);
       } finally {
         setGoalsHydrated(true);
-        console.log("GOAL HYDRATION COMPLETE");
       }
     })();
   }, [auth.userId, isGoalsHydrated, setGoals, setGoalsHydrated]);
@@ -145,13 +125,9 @@ export default function App() {
     const userId = auth.userId;
     if (!userId || isSubscriptionsHydrated) return;
 
-    console.log("SUBSCRIPTION HYDRATION START");
-
     (async () => {
       try {
         const rows = await subscriptionRepo.getSubscriptions(userId);
-        console.log("SUBSCRIPTIONS FETCHED", rows.length);
-
         if (rows.length > 0) {
           setSubscriptions(rows.map(subscriptionRowToSubscription));
         }
@@ -159,7 +135,6 @@ export default function App() {
         console.error("SUBSCRIPTION HYDRATION FAILED", err);
       } finally {
         setSubscriptionsHydrated(true);
-        console.log("SUBSCRIPTION HYDRATION COMPLETE");
       }
     })();
   }, [auth.userId, isSubscriptionsHydrated, setSubscriptions, setSubscriptionsHydrated]);
@@ -168,13 +143,9 @@ export default function App() {
     const userId = auth.userId;
     if (!userId || isBudgetsHydrated) return;
 
-    console.log("BUDGET HYDRATION START");
-
     (async () => {
       try {
         const rows = await budgetRepo.getBudgets(userId);
-        console.log("BUDGETS FETCHED", rows.length);
-
         if (rows.length > 0) {
           setBudgets(rows.map(budgetRowToBudget));
         }
@@ -182,7 +153,6 @@ export default function App() {
         console.error("BUDGET HYDRATION FAILED", err);
       } finally {
         setBudgetsHydrated(true);
-        console.log("BUDGET HYDRATION COMPLETE");
       }
     })();
   }, [auth.userId, isBudgetsHydrated, setBudgets, setBudgetsHydrated]);
@@ -191,23 +161,17 @@ export default function App() {
     const userId = auth.userId;
     if (!userId || isAchievementsHydrated) return;
 
-    console.log("ACHIEVEMENT HYDRATION START");
-
     (async () => {
       try {
         const [achievementRows, userAchievementRows] = await Promise.all([
           achievementRepo.getAchievements(),
           achievementRepo.getUserAchievements(userId),
         ]);
-        console.log("ACHIEVEMENTS FETCHED", achievementRows.length);
-        console.log("USER ACHIEVEMENTS FETCHED", userAchievementRows.length);
-
         setAchievements(mergeAchievements(achievementRows, userAchievementRows));
       } catch (err) {
         console.error("ACHIEVEMENT HYDRATION FAILED", err);
       } finally {
         setAchievementsHydrated(true);
-        console.log("ACHIEVEMENT HYDRATION COMPLETE");
       }
     })();
   }, [auth.userId, isAchievementsHydrated, setAchievements, setAchievementsHydrated]);

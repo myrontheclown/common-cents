@@ -93,171 +93,7 @@ interface FinanceState {
   recalculateStreak: () => void;
 }
 
-const initialAccounts: Account[] = [
-  { id: 'bank-1', name: 'HDFC Checking', type: 'bank', balance: 142500.50, color: '#38BDF8', icon: 'Landmark' },
-  { id: 'invest-1', name: 'Zerodha Portfolio', type: 'investment', balance: 384000.00, color: '#4ADE80', icon: 'TrendingUp' },
-  { id: 'cash-1', name: 'Wallet Cash', type: 'cash', balance: 4500.00, color: '#F43F5E', icon: 'Coins' },
-  { id: 'credit-1', name: 'Amex Gold', type: 'credit', balance: -12800.45, color: '#FB923C', icon: 'CreditCard' },
-];
 
-const initialBudgets: Budget[] = [
-  { id: 'b-1', category: 'Food & Dining', limit: 25000, spent: 18450.50, period: 'monthly' },
-  { id: 'b-2', category: 'Entertainment', limit: 10000, spent: 7850.00, period: 'monthly' },
-  { id: 'b-3', category: 'Housing', limit: 45000, spent: 45000.00, period: 'monthly' },
-  { id: 'b-4', category: 'Shopping', limit: 15000, spent: 8120.20, period: 'monthly' },
-  { id: 'b-5', category: 'Transport', limit: 8000, spent: 5400.00, period: 'monthly' },
-  { id: 'b-6', category: 'Utilities', limit: 10000, spent: 8210.00, period: 'monthly' },
-];
-
-const initialSubscriptions: Subscription[] = [
-  { 
-    id: 'sub-1', 
-    name: 'Spotify Premium', 
-    service_name: 'Spotify Premium',
-    amount: 119.00, 
-    frequency: 'monthly', 
-    billing_cycle: 'monthly',
-    nextBillingDate: '2026-07-15', 
-    renewal_date: '2026-07-15',
-    category: 'Entertainment', 
-    accountId: 'credit-1', 
-    payment_account: 'credit-1',
-    isActive: true,
-    active: true,
-    auto_debit: true,
-    icon: 'Music',
-    color: '#FF78C4'
-  },
-  { 
-    id: 'sub-2', 
-    name: 'Netflix Ultra', 
-    service_name: 'Netflix Ultra',
-    amount: 649.00, 
-    frequency: 'monthly', 
-    billing_cycle: 'monthly',
-    nextBillingDate: '2026-07-22', 
-    renewal_date: '2026-07-22',
-    category: 'Entertainment', 
-    accountId: 'credit-1', 
-    payment_account: 'credit-1',
-    isActive: true,
-    active: true,
-    auto_debit: true,
-    icon: 'Tv',
-    color: '#FF9F9F'
-  },
-  { 
-    id: 'sub-3', 
-    name: 'GitHub Copilot', 
-    service_name: 'GitHub Copilot',
-    amount: 850.00, 
-    frequency: 'monthly', 
-    billing_cycle: 'monthly',
-    nextBillingDate: '2026-07-10', 
-    renewal_date: '2026-07-10',
-    category: 'Utilities', 
-    accountId: 'bank-1', 
-    payment_account: 'bank-1',
-    isActive: true,
-    active: true,
-    auto_debit: true,
-    icon: 'Cpu',
-    color: '#38BDF8'
-  },
-  { 
-    id: 'sub-4', 
-    name: 'AWS Cloud Sandbox', 
-    service_name: 'AWS Cloud Sandbox',
-    amount: 3500.00, 
-    frequency: 'monthly', 
-    billing_cycle: 'monthly',
-    nextBillingDate: '2026-07-05', 
-    renewal_date: '2026-07-05',
-    category: 'Utilities', 
-    accountId: 'bank-1', 
-    payment_account: 'bank-1',
-    isActive: true,
-    active: true,
-    auto_debit: false,
-    icon: 'Cloud',
-    color: '#FB923C'
-  },
-];
-
-const initialGoals: Goal[] = [
-  { id: 'g-1', name: 'Mahindra Thar Downpayment', targetAmount: 500000, currentAmount: 325000, deadline: '2026-12-31', category: 'Transport', status: 'active' },
-  { id: 'g-2', name: 'Emergency Fund', targetAmount: 150000, currentAmount: 115000, deadline: '2026-09-30', category: 'Savings', status: 'active' },
-  { id: 'g-3', name: 'Goa Summer Trip 2026', targetAmount: 50000, currentAmount: 32000, deadline: '2026-07-15', category: 'Travel', status: 'active' },
-];
-
-const initialAchievements: Achievement[] = [
-  { id: 'ach-1', title: 'Aesthetic Saver', description: 'Saved more than 40% of income this month', isUnlocked: true, unlockedAt: '2026-06-28', icon: 'Sparkles', points: 150 },
-  { id: 'ach-2', title: 'Subscription Slayer', description: 'Cancelled 3 or more inactive subscriptions', isUnlocked: false, icon: 'Flame', points: 200 },
-  { id: 'ach-3', title: 'Budget Tactician', description: 'Stayed 100% under budget in all categories', isUnlocked: true, unlockedAt: '2026-06-30', icon: 'ShieldAlert', points: 250 },
-  { id: 'ach-4', title: 'Velocity Limit', description: 'Saved ₹1,00,000 inside your bank account', isUnlocked: true, unlockedAt: '2026-05-15', icon: 'Zap', points: 300 },
-  { id: 'ach-streak-1', title: 'First Entry', description: 'Log your first transaction', isUnlocked: false, icon: 'Sparkles', points: 100 },
-  { id: 'ach-streak-2', title: 'One Week Strong', description: 'Maintain a 7-day logging streak', isUnlocked: false, icon: 'Flame', points: 150 },
-  { id: 'ach-streak-3', title: 'Monthly Discipline', description: 'Maintain a 30-day logging streak', isUnlocked: false, icon: 'Flame', points: 300 },
-  { id: 'ach-streak-4', title: 'Financial Archivist', description: 'Maintain a 100-day logging streak', isUnlocked: false, icon: 'Flame', points: 500 }
-];
-
-const initialTransactions: Transaction[] = [
-  { id: 't-1', date: '2026-06-29', amount: 1450.00, description: 'Swiggy Gourmet Order', category: 'Food & Dining', type: 'expense', accountId: 'credit-1', paymentMethodId: 'pm-5' },
-  { id: 't-2', date: '2026-06-28', amount: 85000.00, description: 'HDFC Tech Paycheck', category: 'Income', type: 'income', accountId: 'bank-1', paymentMethodId: 'pm-1' },
-  { id: 't-3', date: '2026-06-27', amount: 22000.00, description: 'Monthly Apartment Rent', category: 'Housing', type: 'expense', accountId: 'bank-1', paymentMethodId: 'pm-1' },
-  { id: 't-4', date: '2026-06-26', amount: 649.00, description: 'Netflix Ultra subscription', category: 'Entertainment', type: 'expense', accountId: 'credit-1', paymentMethodId: 'pm-5' },
-  { id: 't-5', date: '2026-06-25', amount: 2400.00, description: 'FabIndia Festive Kurta', category: 'Shopping', type: 'expense', accountId: 'credit-1', paymentMethodId: 'pm-5' },
-  { id: 't-6', date: '2026-06-24', amount: 350.00, description: 'Starbucks Coffee Reserve', category: 'Food & Dining', type: 'expense', accountId: 'cash-1', paymentMethodId: 'pm-4' },
-  { id: 't-7', date: '2026-06-22', amount: 1500.00, description: 'HP Petrol Pump Refuel', category: 'Transport', type: 'expense', accountId: 'credit-1', paymentMethodId: 'pm-5' },
-  { id: 't-8', date: '2026-06-20', amount: 850.00, description: 'GitHub Copilot subscription', category: 'Utilities', type: 'expense', accountId: 'bank-1', paymentMethodId: 'pm-3' },
-  { id: 't-9', date: '2026-06-18', amount: 3500.00, description: 'AWS Cloud Sandbox Bill', category: 'Utilities', type: 'expense', accountId: 'bank-1', paymentMethodId: 'pm-3' },
-  { id: 't-10', date: '2026-06-15', amount: 85000.00, description: 'HDFC Tech Paycheck', category: 'Income', type: 'income', accountId: 'bank-1', paymentMethodId: 'pm-1' },
-  { id: 't-11', date: '2026-06-14', amount: 1200.00, description: 'Zomato Food Delivery', category: 'Food & Dining', type: 'expense', accountId: 'cash-1', paymentMethodId: 'pm-4' },
-  { id: 't-12', date: '2026-06-12', amount: 500.00, description: 'Delhi Metro Smart Card', category: 'Transport', type: 'expense', accountId: 'bank-1', paymentMethodId: 'pm-1' },
-  { id: 't-13', date: '2026-06-10', amount: 119.00, description: 'Spotify Premium subscription', category: 'Entertainment', type: 'expense', accountId: 'credit-1', paymentMethodId: 'pm-5' },
-  { id: 't-14', date: '2026-06-08', amount: 4500.00, description: 'Zerodha Dividend Payout', category: 'Income', type: 'income', accountId: 'invest-1' },
-];
-
-const initialPaymentMethods: PaymentMethod[] = [
-  { id: 'pm-1', name: 'Google Pay', type: 'upi', accountId: 'bank-1', color: '#38BDF8', icon: 'Smartphone' },
-  { id: 'pm-2', name: 'PhonePe', type: 'upi', accountId: 'bank-1', color: '#C084FC', icon: 'Smartphone' },
-  { id: 'pm-3', name: 'HDFC Debit Card', type: 'debit', accountId: 'bank-1', color: '#4ADE80', icon: 'CreditCard' },
-  { id: 'pm-4', name: 'Cash Pay', type: 'cash', accountId: 'cash-1', color: '#F43F5E', icon: 'Coins' },
-  { id: 'pm-5', name: 'Amex Gold Card', type: 'credit', accountId: 'credit-1', color: '#FB923C', icon: 'CreditCard' }
-];
-
-const initialInsights: AIInsight[] = [
-  {
-    id: 'in-1',
-    date: '2026-07-01',
-    type: 'tip',
-    title: 'Arbitrage Opportunity Found',
-    summary: 'Transfer idle cash to higher-yield accounts.',
-    detail: 'You have ₹1,42,500 sitting in your HDFC Checking earning 3.0% APY. Moving ₹1,00,000 to a High-Yield fixed sweep earning 7.2% APY yields an extra ~₹4,200/year in passive interest with zero risk.',
-    impactValue: '+₹4,200/yr',
-    actionableStep: 'Open dynamic yield cache in Zerodha or alternative HYSA.'
-  },
-  {
-    id: 'in-2',
-    date: '2026-06-30',
-    type: 'warning',
-    title: 'Velocity Threshold Alert: Food Category',
-    summary: 'Food spending is on track to breach the monthly budget.',
-    detail: 'Your monthly spend on Food & Dining is at ₹18,450.50 against a ₹25,000 limit. With 12 days remaining in the period, your velocity indicates you will breach the limit by ~₹3,500 if current behaviors are sustained.',
-    impactValue: '-₹3,500 over',
-    actionableStep: 'Cap eating out at ₹500/day for the next week.'
-  },
-  {
-    id: 'in-3',
-    date: '2026-06-28',
-    type: 'celebration',
-    title: 'Financial Milestone Unlocked: Emergency Stack',
-    summary: 'Your high-yield cash cushion has covered 5 months of runway.',
-    detail: 'Congratulations! Your cash reserves and emergency reserves combined cover 5 full months of your average baseline living expenses. You are officially in the top 10% of financial security brackets for your age.',
-    impactValue: '5.2 Months Runway',
-    actionableStep: 'Unlock the "Aesthetic Saver" medal inside achievement log.'
-  }
-];
 
 export function calculateStreakFromTransactions(transactions: { date: string }[], todayStr: string) {
   const loggedDates = Array.from(new Set(transactions.map(t => t.date))).sort();
@@ -393,15 +229,15 @@ export const updateStreakAndAchievementsInternal = (set: any, get: any, nextTran
 export const useFinanceStore = create<FinanceState>()(
   persist(
     (set, get) => ({
-      accounts: initialAccounts,
-      transactions: initialTransactions,
-      budgets: initialBudgets,
-      subscriptions: initialSubscriptions,
-      goals: initialGoals,
-      achievements: initialAchievements,
-      insights: initialInsights,
+      accounts: [],
+      transactions: [],
+      budgets: [],
+      subscriptions: [],
+      goals: [],
+      achievements: [],
+      insights: [],
       preferences: {
-        name: 'Myron',
+        name: '',
         currency: 'INR',
         monthlySavingsGoal: 50000,
         categoryThreshold: 80,
@@ -412,7 +248,7 @@ export const useFinanceStore = create<FinanceState>()(
         longestStreak: 0,
         lastLoggedDate: ''
       },
-      paymentMethods: initialPaymentMethods,
+      paymentMethods: [],
       isVaultsHydrated: false,
       isTransactionsHydrated: false,
       isPaymentMethodsHydrated: false,
@@ -705,9 +541,6 @@ export const useFinanceStore = create<FinanceState>()(
       },
 
       addAccount: async (acc, userId) => {
-        console.log("STORE ADD ACCOUNT");
-        console.log("USER ID:", userId);
-        console.log("ACCOUNT:", acc);
         if (!userId) {
           const id = 'acc-' + Math.random().toString(36).substring(2, 9);
           set(s => ({ accounts: [...s.accounts, { ...acc, id }] }));
@@ -718,34 +551,21 @@ export const useFinanceStore = create<FinanceState>()(
         const snapshot = get().accounts;
         set(s => ({ accounts: [...s.accounts, optimistic] }));
         try {
-
-        console.log("CALLING SUPABASE INSERT");
-
-        const row = await vaultRepo.createVault(
-          userId,
-          accountToVaultInsert(acc)
-        );
-
-        console.log("SUPABASE RETURNED:");
-        console.log(row);
-
-        set(s => ({
-          accounts: s.accounts.map(a =>
-            a.id === tempId
-              ? vaultRowToAccount(row)
-              : a
-          )
-        }));
-
-      } catch (e) {
-
-        console.error("SUPABASE INSERT FAILED");
-        console.error(e);
-
-        set({ accounts: snapshot });
-
-        throw e;
-      }
+          const row = await vaultRepo.createVault(
+            userId,
+            accountToVaultInsert(acc)
+          );
+          set(s => ({
+            accounts: s.accounts.map(a =>
+              a.id === tempId
+                ? vaultRowToAccount(row)
+                : a
+            )
+          }));
+        } catch (e) {
+          set({ accounts: snapshot });
+          throw e;
+        }
       },
 
       updateAccount: async (updatedAcc) => {
