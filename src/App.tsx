@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Navigation from './components/Navigation';
 import CommandCenter from './components/CommandCenter';
@@ -41,9 +41,20 @@ export default function App() {
   const auth = useAuthContext();
   const [activeTab, setActiveTab] = useState<string>('command_center');
   const [pendingVaultEdit, setPendingVaultEdit] = useState<Account | null>(null);
-  const { preferences, transactions, recalculateStreak, isVaultsHydrated, setAccounts, setVaultsHydrated, isTransactionsHydrated, setTransactions, setTransactionsHydrated, isPaymentMethodsHydrated, setPaymentMethods, setPaymentMethodsHydrated, isGoalsHydrated, setGoals, setGoalsHydrated, isSubscriptionsHydrated, setSubscriptions, setSubscriptionsHydrated, isBudgetsHydrated, setBudgets, setBudgetsHydrated, isAchievementsHydrated, setAchievements, setAchievementsHydrated } = useFinanceStore();
+  const { preferences, transactions, recalculateStreak, resetAllData, setAccounts, setVaultsHydrated, setTransactions, setTransactionsHydrated, setPaymentMethods, setPaymentMethodsHydrated, setGoals, setGoalsHydrated, setSubscriptions, setSubscriptionsHydrated, setBudgets, setBudgetsHydrated, setAchievements, setAchievementsHydrated } = useFinanceStore();
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [lastNotificationDate, setLastNotificationDate] = useState<string>('');
+
+  const prevUserIdRef = useRef<string | null>(null);
+
+  // Reset all data when user ID changes to prevent stale data from previous user
+  useEffect(() => {
+    if (!auth.userId) return;
+    if (prevUserIdRef.current !== null && prevUserIdRef.current !== auth.userId) {
+      resetAllData();
+    }
+    prevUserIdRef.current = auth.userId;
+  }, [auth.userId, resetAllData]);
 
   useEffect(() => {
     recalculateStreak();
@@ -51,115 +62,103 @@ export default function App() {
 
   useEffect(() => {
     const userId = auth.userId;
-    if (!userId || isVaultsHydrated) return;
+    if (!userId) return;
 
     (async () => {
       try {
         const vaults = await vaultRepo.getVaults(userId);
-        if (vaults.length > 0) {
-          setAccounts(vaults.map(vaultRowToAccount));
-        }
+        setAccounts(vaults.map(vaultRowToAccount));
       } catch (err) {
         console.error("VAULT HYDRATION FAILED", err);
       } finally {
         setVaultsHydrated(true);
       }
     })();
-  }, [auth.userId, isVaultsHydrated, setAccounts, setVaultsHydrated]);
+  }, [auth.userId, setAccounts, setVaultsHydrated]);
 
   useEffect(() => {
     const userId = auth.userId;
-    if (!userId || isTransactionsHydrated) return;
+    if (!userId) return;
 
     (async () => {
       try {
         const rows = await transactionRepo.getTransactions(userId);
-        if (rows.length > 0) {
-          setTransactions(rows.map(transactionRowToTransaction));
-        }
+        setTransactions(rows.map(transactionRowToTransaction));
       } catch (err) {
         console.error("TRANSACTION HYDRATION FAILED", err);
       } finally {
         setTransactionsHydrated(true);
       }
     })();
-  }, [auth.userId, isTransactionsHydrated, setTransactions, setTransactionsHydrated]);
+  }, [auth.userId, setTransactions, setTransactionsHydrated]);
 
   useEffect(() => {
     const userId = auth.userId;
-    if (!userId || isPaymentMethodsHydrated) return;
+    if (!userId) return;
 
     (async () => {
       try {
         const rows = await paymentMethodRepo.getPaymentMethods(userId);
-        if (rows.length > 0) {
-          setPaymentMethods(rows.map(paymentMethodRowToPaymentMethod));
-        }
+        setPaymentMethods(rows.map(paymentMethodRowToPaymentMethod));
       } catch (err) {
         console.error("PAYMENT METHOD HYDRATION FAILED", err);
       } finally {
         setPaymentMethodsHydrated(true);
       }
     })();
-  }, [auth.userId, isPaymentMethodsHydrated, setPaymentMethods, setPaymentMethodsHydrated]);
+  }, [auth.userId, setPaymentMethods, setPaymentMethodsHydrated]);
 
   useEffect(() => {
     const userId = auth.userId;
-    if (!userId || isGoalsHydrated) return;
+    if (!userId) return;
 
     (async () => {
       try {
         const rows = await goalRepo.getGoals(userId);
-        if (rows.length > 0) {
-          setGoals(rows.map(goalRowToGoal));
-        }
+        setGoals(rows.map(goalRowToGoal));
       } catch (err) {
         console.error("GOAL HYDRATION FAILED", err);
       } finally {
         setGoalsHydrated(true);
       }
     })();
-  }, [auth.userId, isGoalsHydrated, setGoals, setGoalsHydrated]);
+  }, [auth.userId, setGoals, setGoalsHydrated]);
 
   useEffect(() => {
     const userId = auth.userId;
-    if (!userId || isSubscriptionsHydrated) return;
+    if (!userId) return;
 
     (async () => {
       try {
         const rows = await subscriptionRepo.getSubscriptions(userId);
-        if (rows.length > 0) {
-          setSubscriptions(rows.map(subscriptionRowToSubscription));
-        }
+        setSubscriptions(rows.map(subscriptionRowToSubscription));
       } catch (err) {
         console.error("SUBSCRIPTION HYDRATION FAILED", err);
       } finally {
         setSubscriptionsHydrated(true);
       }
     })();
-  }, [auth.userId, isSubscriptionsHydrated, setSubscriptions, setSubscriptionsHydrated]);
+  }, [auth.userId, setSubscriptions, setSubscriptionsHydrated]);
 
   useEffect(() => {
     const userId = auth.userId;
-    if (!userId || isBudgetsHydrated) return;
+    if (!userId) return;
 
     (async () => {
       try {
         const rows = await budgetRepo.getBudgets(userId);
-        if (rows.length > 0) {
-          setBudgets(rows.map(budgetRowToBudget));
-        }
+        setBudgets(rows.map(budgetRowToBudget));
       } catch (err) {
         console.error("BUDGET HYDRATION FAILED", err);
       } finally {
         setBudgetsHydrated(true);
       }
     })();
-  }, [auth.userId, isBudgetsHydrated, setBudgets, setBudgetsHydrated]);
+  }, [auth.userId, setBudgets, setBudgetsHydrated]);
 
   useEffect(() => {
     const userId = auth.userId;
-    if (!userId || isAchievementsHydrated) return;
+    if (!userId) return;
 
     (async () => {
       try {
@@ -174,7 +173,7 @@ export default function App() {
         setAchievementsHydrated(true);
       }
     })();
-  }, [auth.userId, isAchievementsHydrated, setAchievements, setAchievementsHydrated]);
+  }, [auth.userId, setAchievements, setAchievementsHydrated]);
 
   // Request browser notification permission if enabled and default
   useEffect(() => {

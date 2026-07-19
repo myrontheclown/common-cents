@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { useAuth, type AuthState } from '../hooks/useAuth';
+import AuthPage from '../components/AuthPage';
 
 const AuthContext = createContext<AuthState | null>(null);
 
@@ -35,6 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           </button>
         </div>
       </div>
+    );
+  }
+
+  if (!auth.user) {
+    return (
+      <AuthPage
+        onSignIn={auth.signIn}
+        onSignUp={auth.signUp}
+        onGoogleSignIn={auth.signInWithGoogle}
+      />
     );
   }
 

@@ -51,7 +51,7 @@ export default function Navigation({ activeTab, setActiveTab }: NavigationProps)
               {totalPoints} PTS
             </div>
             <div className="bg-[#A5F3FC] border-2 border-black px-2 py-0.5 font-display text-[10px] font-bold text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
-              {preferences.name.toUpperCase()}
+              {(preferences.name || 'USER').toUpperCase()}
             </div>
           </div>
         </div>

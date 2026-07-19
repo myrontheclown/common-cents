@@ -91,6 +91,7 @@ interface FinanceState {
   deletePaymentMethod: (id: string) => Promise<void>;
   updatePaymentMethod: (pm: PaymentMethod) => Promise<void>;
   recalculateStreak: () => void;
+  resetAllData: () => void;
 }
 
 
@@ -850,6 +851,36 @@ export const useFinanceStore = create<FinanceState>()(
         }
       },
       
+      resetAllData: () => set({
+        accounts: [],
+        transactions: [],
+        budgets: [],
+        subscriptions: [],
+        goals: [],
+        achievements: [],
+        insights: [],
+        paymentMethods: [],
+        preferences: {
+          name: '',
+          currency: 'INR',
+          monthlySavingsGoal: 50000,
+          categoryThreshold: 80,
+          theme: 'neubrutalist',
+          reminderEnabled: true,
+          reminderTime: '21:30',
+          currentStreak: 0,
+          longestStreak: 0,
+          lastLoggedDate: ''
+        },
+        isVaultsHydrated: false,
+        isTransactionsHydrated: false,
+        isPaymentMethodsHydrated: false,
+        isGoalsHydrated: false,
+        isSubscriptionsHydrated: false,
+        isBudgetsHydrated: false,
+        isAchievementsHydrated: false,
+      }),
+
       recalculateStreak: () => {
         updateStreakAndAchievementsInternal(set, get, get().transactions);
       }

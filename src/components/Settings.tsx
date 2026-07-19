@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { useAuthContext } from '../providers/AuthProvider';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings as SettingsIcon, 
@@ -22,8 +22,13 @@ import {
   Lock,
   Edit3,
   Target,
-  X
+  X,
+  LogOut,
+  Key,
+  Mail,
+  Calendar
 } from 'lucide-react';
+import { updateProfile, updatePassword } from '../lib/auth';
 import { useFinanceStore } from '../store';
 import type { Account, Budget, PaymentMethod } from '../types';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
@@ -54,6 +59,21 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
   } = useFinanceStore();
 
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Profile / Sign out state
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  // Edit profile form
+  const [editDisplayName, setEditDisplayName] = useState(auth.profile?.display_name || preferences.name || '');
+  const [editCurrency, setEditCurrency] = useState('INR');
+
+  // Change password form
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Settings form states
   const [name, setName] = useState(preferences.name);
@@ -354,6 +374,86 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
             [SYS_ALERT]: {notification}
           </div>
         )}
+      </div>
+
+      {/* PROFILE CARD */}
+      <div className="lg:col-span-12">
+        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            {/* AVATAR */}
+            <div className="w-16 h-16 bg-[#FFDE4D] border-3 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] flex items-center justify-center flex-shrink-0">
+              <span className="font-display text-2xl font-black text-black">
+                {(auth.profile?.display_name || preferences.name || 'U').charAt(0).toUpperCase()}
+              </span>
+            </div>
+            {/* INFO */}
+            <div className="flex-grow min-w-0">
+              <h3 className="font-display text-xl font-black text-black uppercase tracking-tight truncate">
+                {auth.profile?.display_name || preferences.name || 'User'}
+              </h3>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                <div className="flex items-center gap-1.5">
+                  <Mail className="w-3 h-3 text-gray-500" />
+                  <span className="font-mono text-[10px] text-gray-600 truncate">
+                    {auth.profile?.email || auth.user?.email || 'No email'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3 h-3 text-gray-500" />
+                  <span className="font-mono text-[10px] text-gray-600 uppercase">
+                    {auth.user?.app_metadata?.provider || 'email'}
+                  </span>
+                </div>
+                {auth.profile?.created_at && (
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3 text-gray-500" />
+                    <span className="font-mono text-[10px] text-gray-600">
+                      Joined {new Date(auth.profile.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* ACTIONS */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+              <button
+                onClick={() => {
+                  setEditDisplayName(auth.profile?.display_name || preferences.name || '');
+                  setEditCurrency('INR');
+                  setShowEditProfile(true);
+                }}
+                className="px-3 py-2 bg-[#A5F3FC] hover:bg-cyan-300 border-2 border-black font-mono text-[10px] font-bold text-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-1.5"
+                style={{ cursor: 'pointer' }}
+              >
+                <Edit3 className="w-3 h-3" />
+                EDIT PROFILE
+              </button>
+              {(auth.user?.app_metadata?.provider === 'email' || (!auth.profile && auth.user?.email)) && (
+                <button
+                  onClick={() => {
+                    setNewPassword('');
+                    setConfirmNewPassword('');
+                    setPasswordError(null);
+                    setShowChangePassword(true);
+                  }}
+                  className="px-3 py-2 bg-white hover:bg-gray-100 border-2 border-black font-mono text-[10px] font-bold text-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-1.5"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Key className="w-3 h-3" />
+                  CHANGE PASSWORD
+                </button>
+              )}
+              <button
+                onClick={() => setShowSignOutConfirm(true)}
+                className="px-3 py-2 bg-[#FF6B6B] hover:bg-red-400 border-2 border-black font-mono text-[10px] font-bold text-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-1.5"
+                style={{ cursor: 'pointer' }}
+              >
+                <LogOut className="w-3 h-3" />
+                SIGN OUT
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* LEFT COLUMN: GLOBAL PREFERENCES & ACCOUNT MOUNTING (7 SPAN) */}
@@ -1111,6 +1211,283 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
                     style={{ cursor: 'pointer' }}
                   >
                     DELETE
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* EDIT PROFILE MODAL */}
+      <AnimatePresence>
+        {showEditProfile && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowEditProfile(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+              className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] max-w-md w-full relative z-[110]"
+            >
+              <div className="border-b-4 border-black pb-3 mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-black" />
+                  <h3 className="font-display text-xl font-black text-black uppercase tracking-tight">
+                    EDIT PROFILE
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowEditProfile(false)}
+                  className="p-1 bg-black text-white hover:bg-zinc-800 border-2 border-black transition-colors"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <X className="w-4 h-4 stroke-[2.5px]" />
+                </button>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!editDisplayName.trim()) return;
+                try {
+                  await updateProfile(auth.userId!, { display_name: editDisplayName.trim() });
+                  updatePreferences({
+                    ...preferences,
+                    name: editDisplayName.trim(),
+                  });
+                  await auth.refreshProfile();
+                  setShowEditProfile(false);
+                  triggerNotification('PROFILE UPDATED SUCCESSFULLY.');
+                } catch {
+                  triggerNotification('ERROR: FAILED TO UPDATE PROFILE.');
+                }
+              }} className="space-y-4">
+                <div>
+                  <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    DISPLAY NAME
+                  </label>
+                  <input
+                    type="text"
+                    value={editDisplayName}
+                    onChange={(e) => setEditDisplayName(e.target.value)}
+                    className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                    autoFocus
+                    required
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditProfile(false)}
+                    className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-1/2 bg-[#FFDE4D] hover:bg-yellow-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    SAVE
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CHANGE PASSWORD MODAL */}
+      <AnimatePresence>
+        {showChangePassword && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowChangePassword(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+              className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] max-w-md w-full relative z-[110]"
+            >
+              <div className="border-b-4 border-black pb-3 mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Key className="w-5 h-5 text-black" />
+                  <h3 className="font-display text-xl font-black text-black uppercase tracking-tight">
+                    CHANGE PASSWORD
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowChangePassword(false)}
+                  className="p-1 bg-black text-white hover:bg-zinc-800 border-2 border-black transition-colors"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <X className="w-4 h-4 stroke-[2.5px]" />
+                </button>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setPasswordError(null);
+                if (newPassword.length < 6) {
+                  setPasswordError('Password must be at least 6 characters.');
+                  return;
+                }
+                if (newPassword !== confirmNewPassword) {
+                  setPasswordError('Passwords do not match.');
+                  return;
+                }
+                setPasswordLoading(true);
+                try {
+                  await updatePassword(newPassword);
+                  setShowChangePassword(false);
+                  triggerNotification('PASSWORD UPDATED SUCCESSFULLY.');
+                } catch (err: any) {
+                  setPasswordError(err?.message || 'Failed to update password.');
+                } finally {
+                  setPasswordLoading(false);
+                }
+              }} className="space-y-4">
+                <div>
+                  <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    NEW PASSWORD
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Minimum 6 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                    autoFocus
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    CONFIRM NEW PASSWORD
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Re-enter new password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                    required
+                  />
+                </div>
+
+                {passwordError && (
+                  <div className="bg-[#FF9F9F] border-2 border-black p-2 font-mono text-[11px] font-bold text-black">
+                    [PASSWORD_ERROR]: {passwordError}
+                  </div>
+                )}
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePassword(false)}
+                    className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="w-1/2 bg-[#FF78C4] hover:bg-pink-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    style={{ cursor: passwordLoading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {passwordLoading ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        UPDATING...
+                      </>
+                    ) : (
+                      'UPDATE PASSWORD'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SIGN OUT CONFIRMATION */}
+      <AnimatePresence>
+        {showSignOutConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSignOutConfirm(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+              className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] max-w-md w-full relative z-[110]"
+            >
+              <div className="border-b-4 border-black pb-3 mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LogOut className="w-5 h-5 text-black" />
+                  <h3 className="font-display text-xl font-black text-black uppercase tracking-tight">
+                    SIGN OUT
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowSignOutConfirm(false)}
+                  className="p-1 bg-black text-white hover:bg-zinc-800 border-2 border-black transition-colors"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <X className="w-4 h-4 stroke-[2.5px]" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="font-mono text-sm font-bold text-black">
+                  Are you sure?
+                </p>
+                <p className="font-mono text-[11px] text-gray-600">
+                  You will need to sign in again to access your data.
+                </p>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSignOutConfirm(false)}
+                    className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await auth.signOut();
+                    }}
+                    className="w-1/2 bg-[#FF6B6B] hover:bg-red-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    SIGN OUT
                   </button>
                 </div>
               </div>
