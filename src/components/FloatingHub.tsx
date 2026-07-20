@@ -76,7 +76,7 @@ export default function FloatingHub() {
       setSubRenewalDate(sub.renewal_date || sub.nextBillingDate || '');
       setSubAutoDebit(sub.auto_debit ?? true);
       setSubIcon(sub.icon || 'CreditCard');
-      setSubColor(sub.color || '#C084FC');
+      setSubColor(sub.color || '#8B5CF6');
       setError(null);
       setActiveModal('subscription');
     };
@@ -114,7 +114,7 @@ export default function FloatingHub() {
   const [subRenewalDate, setSubRenewalDate] = useState('');
   const [subAutoDebit, setSubAutoDebit] = useState(true);
   const [subIcon, setSubIcon] = useState('CreditCard');
-  const [subColor, setSubColor] = useState('#C084FC');
+  const [subColor, setSubColor] = useState('#8B5CF6');
 
   // Validation errors
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +174,7 @@ export default function FloatingHub() {
     setSubRenewalDate('');
     setSubAutoDebit(true);
     setSubIcon('CreditCard');
-    setSubColor('#C084FC');
+    setSubColor('#8B5CF6');
   };
 
   const closeModal = () => {
@@ -438,8 +438,8 @@ export default function FloatingHub() {
       id: 'expense',
       label: 'EXPENSE',
       emoji: '💸',
-      color: '#FF78C4', // Pink
-      icon: <TrendingDown className="w-5 h-5 text-black" />,
+      color: '#DC5C5C', // Red
+      icon: <TrendingDown className="w-5 h-5 text-[var(--text-primary)]" />,
       x: -radius,
       y: 0
     },
@@ -447,8 +447,8 @@ export default function FloatingHub() {
       id: 'income',
       label: 'INCOME',
       emoji: '💰',
-      color: '#4ADE80', // Green
-      icon: <TrendingUp className="w-5 h-5 text-black" />,
+      color: '#22C55E', // Green
+      icon: <TrendingUp className="w-5 h-5 text-[var(--text-primary)]" />,
       x: Math.round(-radius * 0.7071),
       y: Math.round(-radius * 0.7071)
     },
@@ -456,8 +456,8 @@ export default function FloatingHub() {
       id: 'subscription',
       label: 'SUBSCRIPTION',
       emoji: '💳',
-      color: '#C084FC', // Purple
-      icon: <CreditCard className="w-5 h-5 text-black" />,
+      color: '#8B5CF6', // Purple
+      icon: <CreditCard className="w-5 h-5 text-[var(--text-primary)]" />,
       x: 0,
       y: -radius
     },
@@ -465,8 +465,8 @@ export default function FloatingHub() {
       id: 'goal',
       label: 'GOAL',
       emoji: '🎯',
-      color: '#FFDE4D', // Yellow
-      icon: <Target className="w-5 h-5 text-black" />,
+      color: '#D4A72C', // Gold
+      icon: <Target className="w-5 h-5 text-[var(--text-primary)]" />,
       x: Math.round(radius * 0.7071),
       y: Math.round(-radius * 0.7071)
     },
@@ -474,8 +474,8 @@ export default function FloatingHub() {
       id: 'transfer',
       label: 'TRANSFER',
       emoji: '🔄',
-      color: '#A5F3FC', // Cyan
-      icon: <RefreshCw className="w-5 h-5 text-black" />,
+      color: '#4F8CC9', // Steel Blue
+      icon: <RefreshCw className="w-5 h-5 text-[var(--text-primary)]" />,
       x: radius,
       y: 0
     }
@@ -502,12 +502,12 @@ export default function FloatingHub() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -40 }}
             transition={{ type: 'spring', stiffness: 350, damping: 20 }}
-            className="fixed top-24 left-1/2 -translate-x-1/2 z-[110] max-w-[90vw] bg-[#4ADE80] border-4 border-black p-4 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex items-center gap-3"
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[110] max-w-[90vw] bg-[var(--accent-success)] border-4 border-[var(--border-color)] p-4 shadow-[6px_6px_0px_var(--shadow-color)] flex items-center gap-3"
           >
-            <div className="bg-black p-1 border border-white shrink-0">
-              <Sparkles className="w-5 h-5 text-[#FFDE4D] animate-pulse" />
+            <div className="bg-[var(--bg-badge)] p-1 border border-[var(--border-color)] shrink-0">
+              <Sparkles className="w-5 h-5 text-[var(--accent-primary)] animate-pulse" />
             </div>
-            <p className="font-mono text-xs font-bold text-black uppercase leading-tight">
+            <p className="font-mono text-xs font-bold text-[var(--text-primary)] uppercase leading-tight">
               [SYS_ALERT]: {notification}
             </p>
           </motion.div>
@@ -522,7 +522,7 @@ export default function FloatingHub() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleToggle}
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 transition-all"
+            className="fixed inset-0 bg-[var(--bg-badge)]/40 backdrop-blur-xs z-40 transition-all"
           />
         )}
       </AnimatePresence>
@@ -558,7 +558,7 @@ export default function FloatingHub() {
               <div className="flex flex-col items-center group w-12">
                 <button
                   onClick={() => openModal(item.id as ModalType)}
-                  className="w-12 h-12 rounded-full border-4 border-black flex items-center justify-center shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-x-[2.5px] active:translate-y-[2.5px] active:shadow-none transition-all"
+                  className="w-12 h-12 rounded-full border-4 border-[var(--border-color)] flex items-center justify-center shadow-[3px_3px_0px_var(--shadow-color)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-x-[2.5px] active:translate-y-[2.5px] active:shadow-none transition-all"
                   style={{ backgroundColor: item.color, cursor: 'pointer' }}
                   title={item.label}
                 >
@@ -566,7 +566,7 @@ export default function FloatingHub() {
                 </button>
                 
                 {/* Neobrutalist mini floating label */}
-                <span className="font-mono text-[8px] font-extrabold bg-black text-white px-1.5 py-0.5 border border-black shadow-[1px_1px_0px_rgba(255,255,255,1)] mt-1.5 tracking-wider select-none">
+                <span className="font-mono text-[8px] font-extrabold bg-[var(--bg-badge)] text-[var(--text-badge)] px-1.5 py-0.5 border border-[var(--border-color)] shadow-[1px_1px_0px_rgba(255,255,255,1)] mt-1.5 tracking-wider select-none">
                   {item.emoji} {item.label}
                 </span>
               </div>
@@ -579,17 +579,17 @@ export default function FloatingHub() {
           onClick={handleToggle}
           animate={{ rotate: isOpen ? 135 : 0 }}
           transition={{ type: 'spring', stiffness: 350, damping: 18 }}
-          className={`w-14 h-14 rounded-full border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-x-[1.5px] active:translate-y-[1.5px] active:shadow-none transition-all z-50`}
+          className={`w-14 h-14 rounded-full border-4 border-[var(--border-color)] flex items-center justify-center shadow-[4px_4px_0px_var(--shadow-color)] active:translate-x-[1.5px] active:translate-y-[1.5px] active:shadow-none transition-all z-50`}
           style={{ 
-            backgroundColor: isOpen ? '#FF78C4' : '#FFDE4D',
+            backgroundColor: isOpen ? '#DC5C5C' : '#D4A72C',
             cursor: 'pointer' 
           }}
           id="global-floating-hub-btn"
         >
           {isOpen ? (
-            <X className="w-7 h-7 text-black stroke-[3px]" />
+            <X className="w-7 h-7 text-[var(--text-primary)] stroke-[3px]" />
           ) : (
-            <Plus className="w-7 h-7 text-black stroke-[3px]" />
+            <Plus className="w-7 h-7 text-[var(--text-primary)] stroke-[3px]" />
           )}
         </motion.button>
       </div>
@@ -604,7 +604,7 @@ export default function FloatingHub() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              className="absolute inset-0 bg-[var(--bg-badge)]/60 backdrop-blur-xs"
             />
 
             {/* Modal Box */}
@@ -613,10 +613,10 @@ export default function FloatingHub() {
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 20, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-              className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] max-w-md w-full relative z-[110]"
+              className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-6 shadow-[8px_8px_0px_var(--shadow-color)] max-w-md w-full relative z-[110]"
             >
               {/* Modal Header */}
-              <div className="border-b-4 border-black pb-3 mb-4 flex items-center justify-between">
+              <div className="border-b-4 border-[var(--border-color)] pb-3 mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">
                     {activeModal === 'expense' && '💸'}
@@ -625,7 +625,7 @@ export default function FloatingHub() {
                     {activeModal === 'transfer' && '🔄'}
                     {activeModal === 'subscription' && '💳'}
                   </span>
-                  <h3 className="font-display text-xl font-black text-black uppercase tracking-tight">
+                  <h3 className="font-display text-xl font-black text-[var(--text-primary)] uppercase tracking-tight">
                     {activeModal === 'expense' && 'LOG NEW EXPENSE'}
                     {activeModal === 'income' && 'LOG INFLOW INCOME'}
                     {activeModal === 'goal' && (editingGoal ? 'EDIT GOAL' : 'SET SAVINGS TARGET')}
@@ -635,7 +635,7 @@ export default function FloatingHub() {
                 </div>
                 <button
                   onClick={closeModal}
-                  className="p-1 bg-black text-white hover:bg-zinc-800 border-2 border-black transition-colors"
+                  className="p-1 bg-[var(--bg-badge)] text-[var(--text-badge)] hover:bg-zinc-800 border-2 border-[var(--border-color)] transition-colors"
                   style={{ cursor: 'pointer' }}
                 >
                   <X className="w-4 h-4 stroke-[2.5px]" />
@@ -644,7 +644,7 @@ export default function FloatingHub() {
 
               {/* Error messages if any */}
               {error && (
-                <div className="bg-[#FF9F9F] border-2 border-black p-2.5 font-mono text-[10px] font-bold text-black mb-4 shadow-[2px_2px_0px_rgba(0,0,0,1)] uppercase">
+                <div className="bg-[var(--card-bg)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-danger)] p-2.5 font-mono text-[10px] font-bold text-[var(--accent-danger)] mb-4 shadow-[2px_2px_0px_var(--shadow-color)] uppercase">
                   [SYSTEM_ERROR]: {error}
                 </div>
               )}
@@ -653,7 +653,7 @@ export default function FloatingHub() {
               {activeModal === 'expense' && (
                 <form onSubmit={handleExpenseSubmit} className="space-y-4">
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       DESCRIPTION / LEDGER MEMO
                     </label>
                     <input
@@ -661,14 +661,14 @@ export default function FloatingHub() {
                       placeholder="e.g. Swiggy Gourmet Dinner"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       autoFocus
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         AMOUNT (₹)
                       </label>
                       <input
@@ -677,18 +677,18 @@ export default function FloatingHub() {
                         placeholder="0.00"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       />
                     </div>
 
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         CATEGORY INDEX
                       </label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       >
                         {budgetCategories.map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -698,13 +698,13 @@ export default function FloatingHub() {
                   </div>
 
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       DEBIT SOURCE VAULT
                     </label>
                     <select
                       value={accountId}
                       onChange={(e) => setAccountId(e.target.value)}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                     >
                       {accounts.map(acc => (
                         <option key={acc.id} value={acc.id}>
@@ -715,7 +715,7 @@ export default function FloatingHub() {
                   </div>
 
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       PAYMENT METHOD
                     </label>
                     <select
@@ -728,7 +728,7 @@ export default function FloatingHub() {
                           setAccountId(pm.accountId);
                         }
                       }}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                     >
                       <option value="">DIRECT FROM VAULT (CASH/NETBANKING)</option>
                       {paymentMethods.map(pm => {
@@ -746,14 +746,14 @@ export default function FloatingHub() {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       CANCEL
                     </button>
                     <button
                       type="submit"
-                      className="w-1/2 bg-[#FF78C4] hover:bg-pink-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--accent-primary)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[#000000] shadow-[3px_3px_0px_var(--shadow-color)] hover:shadow-[4px_4px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       INDEX DEBIT
@@ -765,7 +765,7 @@ export default function FloatingHub() {
               {activeModal === 'income' && (
                 <form onSubmit={handleIncomeSubmit} className="space-y-4">
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       DESCRIPTION / INFLOW MEMO
                     </label>
                     <input
@@ -773,14 +773,14 @@ export default function FloatingHub() {
                       placeholder="e.g. HDFC Tech Salary"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       autoFocus
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         AMOUNT (₹)
                       </label>
                       <input
@@ -789,18 +789,18 @@ export default function FloatingHub() {
                         placeholder="0.00"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       />
                     </div>
 
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         CREDIT DESTINATION VAULT
                       </label>
                       <select
                         value={accountId}
                         onChange={(e) => setAccountId(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       >
                         {accounts.map(acc => (
                           <option key={acc.id} value={acc.id}>
@@ -812,7 +812,7 @@ export default function FloatingHub() {
                   </div>
 
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       PAYMENT METHOD
                     </label>
                     <select
@@ -825,7 +825,7 @@ export default function FloatingHub() {
                           setAccountId(pm.accountId);
                         }
                       }}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                     >
                       <option value="">DIRECT FROM VAULT (CASH/NETBANKING)</option>
                       {paymentMethods.map(pm => {
@@ -843,14 +843,14 @@ export default function FloatingHub() {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       CANCEL
                     </button>
                     <button
                       type="submit"
-                      className="w-1/2 bg-[#4ADE80] hover:bg-green-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--accent-success)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[#000000] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       INDEX DEPOSIT
@@ -862,7 +862,7 @@ export default function FloatingHub() {
               {activeModal === 'goal' && (
                 <form onSubmit={handleGoalSubmit} className="space-y-4">
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       GOAL IDENTIFIER / TARGET NAME
                     </label>
                     <input
@@ -870,14 +870,14 @@ export default function FloatingHub() {
                       placeholder="e.g. Goa Summer Trip 2026"
                       value={goalName}
                       onChange={(e) => setGoalName(e.target.value)}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       autoFocus
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         TARGET AMOUNT (₹)
                       </label>
                       <input
@@ -885,13 +885,13 @@ export default function FloatingHub() {
                         placeholder="e.g. 50000"
                         value={goalTarget}
                         onChange={(e) => setGoalTarget(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       />
                     </div>
 
                     {editingGoal ? (
                       <div>
-                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                        <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                           CURRENT AMOUNT (₹)
                         </label>
                         <input
@@ -899,19 +899,19 @@ export default function FloatingHub() {
                           placeholder="e.g. 40000"
                           value={goalCurrentAmount}
                           onChange={(e) => setGoalCurrentAmount(e.target.value)}
-                          className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                          className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                         />
                       </div>
                     ) : (
                       <div>
-                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                        <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                           TARGET DEADLINE
                         </label>
                         <input
                           type="date"
                           value={goalDeadline}
                           onChange={(e) => setGoalDeadline(e.target.value)}
-                          className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                          className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                         />
                       </div>
                     )}
@@ -920,24 +920,24 @@ export default function FloatingHub() {
                   {editingGoal ? (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                        <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                           TARGET DEADLINE
                         </label>
                         <input
                           type="date"
                           value={goalDeadline}
                           onChange={(e) => setGoalDeadline(e.target.value)}
-                          className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                          className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                         />
                       </div>
                       <div>
-                        <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                        <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                           STATUS
                         </label>
                         <select
                           value={goalStatus}
                           onChange={(e) => setGoalStatus(e.target.value as 'active' | 'completed' | 'paused')}
-                          className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                          className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                         >
                           <option value="active">ACTIVE</option>
                           <option value="completed">COMPLETED</option>
@@ -947,14 +947,14 @@ export default function FloatingHub() {
                     </div>
                   ) : (
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         TARGET DEADLINE
                       </label>
                       <input
                         type="date"
                         value={goalDeadline}
                         onChange={(e) => setGoalDeadline(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       />
                     </div>
                   )}
@@ -963,14 +963,14 @@ export default function FloatingHub() {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       CANCEL
                     </button>
                     <button
                       type="submit"
-                      className="w-1/2 bg-[#FFDE4D] hover:bg-yellow-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--accent-primary)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[#000000] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       {editingGoal ? 'SAVE GOAL' : 'MOUNT TARGET'}
@@ -983,13 +983,13 @@ export default function FloatingHub() {
                 <form onSubmit={handleTransferSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         SOURCE VAULT (FROM)
                       </label>
                       <select
                         value={fromAccountId}
                         onChange={(e) => setFromAccountId(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       >
                         {accounts.map(acc => (
                           <option key={acc.id} value={acc.id}>
@@ -1000,13 +1000,13 @@ export default function FloatingHub() {
                     </div>
 
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         DESTINATION VAULT (TO)
                       </label>
                       <select
                         value={toAccountId}
                         onChange={(e) => setToAccountId(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       >
                         {accounts.map(acc => (
                           <option key={acc.id} value={acc.id}>
@@ -1018,7 +1018,7 @@ export default function FloatingHub() {
                   </div>
 
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       TRANSFER VOLUME AMOUNT (₹)
                     </label>
                     <input
@@ -1027,7 +1027,7 @@ export default function FloatingHub() {
                       placeholder="0.00"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                     />
                   </div>
 
@@ -1035,14 +1035,14 @@ export default function FloatingHub() {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       CANCEL
                     </button>
                     <button
                       type="submit"
-                      className="w-1/2 bg-[#A5F3FC] hover:bg-cyan-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--accent-info)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[#000000] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       COMMENCE TRANSFER
@@ -1054,7 +1054,7 @@ export default function FloatingHub() {
               {activeModal === 'subscription' && (
                 <form onSubmit={handleSubscriptionSubmit} className="space-y-4 text-left">
                   <div>
-                    <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       SERVICE NAME
                     </label>
                     <input
@@ -1062,7 +1062,7 @@ export default function FloatingHub() {
                       placeholder="e.g. Netflix Premium"
                       value={subServiceName}
                       onChange={(e) => setSubServiceName(e.target.value)}
-                      className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       autoFocus
                       required
                     />
@@ -1070,7 +1070,7 @@ export default function FloatingHub() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         AMOUNT (₹)
                       </label>
                       <input
@@ -1079,21 +1079,21 @@ export default function FloatingHub() {
                         placeholder="0.00"
                         value={subAmount}
                         onChange={(e) => setSubAmount(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         BILLING CYCLE
                       </label>
                       <div className="grid grid-cols-2 gap-1.5">
                         <button
                           type="button"
                           onClick={() => setSubBillingCycle('monthly')}
-                          className={`py-2 border-2 border-black font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none ${
-                            subBillingCycle === 'monthly' ? 'bg-[#C084FC] text-black' : 'bg-white text-gray-700'
+                          className={`py-2 border-2 border-[var(--border-color)] font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none ${
+                            subBillingCycle === 'monthly' ? 'bg-[var(--card-bg)] border border-[var(--accent-purple)] text-[var(--accent-purple)]' : 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
                           }`}
                           style={{ cursor: 'pointer' }}
                         >
@@ -1102,8 +1102,8 @@ export default function FloatingHub() {
                         <button
                           type="button"
                           onClick={() => setSubBillingCycle('yearly')}
-                          className={`py-2 border-2 border-black font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none ${
-                            subBillingCycle === 'yearly' ? 'bg-[#C084FC] text-black' : 'bg-white text-gray-700'
+                          className={`py-2 border-2 border-[var(--border-color)] font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none ${
+                            subBillingCycle === 'yearly' ? 'bg-[var(--card-bg)] border border-[var(--accent-purple)] text-[var(--accent-purple)]' : 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
                           }`}
                           style={{ cursor: 'pointer' }}
                         >
@@ -1115,13 +1115,13 @@ export default function FloatingHub() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         CATEGORY INDEX
                       </label>
                       <select
                         value={subCategory}
                         onChange={(e) => setSubCategory(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       >
                         {budgetCategories.map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -1130,13 +1130,13 @@ export default function FloatingHub() {
                     </div>
 
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         PAYMENT VAULT
                       </label>
                       <select
                         value={subPaymentAccount}
                         onChange={(e) => setSubPaymentAccount(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-2 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                       >
                         {accounts.map(acc => (
                           <option key={acc.id} value={acc.id}>
@@ -1149,14 +1149,14 @@ export default function FloatingHub() {
 
                   <div className="grid grid-cols-2 gap-3 items-end">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         RENEWAL DATE
                       </label>
                       <input
                         type="date"
                         value={subRenewalDate}
                         onChange={(e) => setSubRenewalDate(e.target.value)}
-                        className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                         required
                       />
                     </div>
@@ -1165,14 +1165,14 @@ export default function FloatingHub() {
                       <button
                         type="button"
                         onClick={() => setSubAutoDebit(!subAutoDebit)}
-                        className={`w-full py-1.5 px-2 border-2 border-black font-mono text-[10px] font-bold flex items-center justify-between shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all ${
-                          subAutoDebit ? 'bg-[#4ADE80] text-black' : 'bg-white text-gray-500'
+                        className={`w-full py-1.5 px-2 border-2 border-[var(--border-color)] font-mono text-[10px] font-bold flex items-center justify-between shadow-[2px_2px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none transition-all ${
+                          subAutoDebit ? 'bg-[var(--card-bg)] border border-[var(--accent-success)] text-[var(--accent-success)]' : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
                         }`}
                         style={{ cursor: 'pointer' }}
                       >
                         <span>AUTO DEBIT</span>
-                        <span className="border-2 border-black bg-white w-4 h-4 flex items-center justify-center shrink-0">
-                          {subAutoDebit && <Check className="w-3 h-3 text-black stroke-[3px]" />}
+                        <span className="border-2 border-[var(--border-color)] bg-[var(--bg-surface)] w-4 h-4 flex items-center justify-center shrink-0">
+                          {subAutoDebit && <Check className="w-3 h-3 text-[var(--text-primary)] stroke-[3px]" />}
                         </span>
                       </button>
                     </div>
@@ -1180,15 +1180,15 @@ export default function FloatingHub() {
 
                   {editingSubscription && (
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         STATUS
                       </label>
                       <div className="grid grid-cols-2 gap-1.5">
                         <button
                           type="button"
                           onClick={() => setEditingSubscription({ ...editingSubscription, active: true })}
-                          className={`py-2 border-2 border-black font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none ${
-                            editingSubscription.active ? 'bg-[#4ADE80] text-black' : 'bg-white text-gray-700'
+                          className={`py-2 border-2 border-[var(--border-color)] font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none ${
+                            editingSubscription.active ? 'bg-[var(--card-bg)] border border-[var(--accent-success)] text-[var(--accent-success)]' : 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
                           }`}
                           style={{ cursor: 'pointer' }}
                         >
@@ -1197,8 +1197,8 @@ export default function FloatingHub() {
                         <button
                           type="button"
                           onClick={() => setEditingSubscription({ ...editingSubscription, active: false })}
-                          className={`py-2 border-2 border-black font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none ${
-                            !editingSubscription.active ? 'bg-gray-300 text-black' : 'bg-white text-gray-700'
+                          className={`py-2 border-2 border-[var(--border-color)] font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none ${
+                            !editingSubscription.active ? 'bg-[var(--bg-muted)] text-[var(--text-primary)]' : 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
                           }`}
                           style={{ cursor: 'pointer' }}
                         >
@@ -1210,7 +1210,7 @@ export default function FloatingHub() {
 
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         RECURRING ICON
                       </label>
                       <div className="flex flex-wrap gap-1.5">
@@ -1226,8 +1226,8 @@ export default function FloatingHub() {
                             key={iconOpt.name}
                             type="button"
                             onClick={() => setSubIcon(iconOpt.name)}
-                            className={`w-7 h-7 flex items-center justify-center border-2 border-black text-xs shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none transition-all ${
-                              subIcon === iconOpt.name ? 'bg-[#A5F3FC]' : 'bg-white'
+                            className={`w-7 h-7 flex items-center justify-center border-2 border-[var(--border-color)] text-xs shadow-[1px_1px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none transition-all ${
+                              subIcon === iconOpt.name ? 'bg-[var(--accent-info)] text-[#000000]' : 'bg-[var(--bg-surface)]'
                             }`}
                             style={{ cursor: 'pointer' }}
                           >
@@ -1238,16 +1238,16 @@ export default function FloatingHub() {
                     </div>
 
                     <div>
-                      <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                         AESTHETIC HUE
                       </label>
                       <div className="flex gap-1.5 pt-1">
-                        {['#FF78C4', '#4ADE80', '#FFDE4D', '#38BDF8', '#FB923C', '#C084FC'].map(c => (
+                        {['#DC5C5C', '#22C55E', '#D4A72C', '#4F8CC9', '#F59E0B', '#8B5CF6'].map(c => (
                           <button
                             key={c}
                             type="button"
                             onClick={() => setSubColor(c)}
-                            className={`w-5 h-5 rounded-full border-2 border-black transition-transform ${
+                            className={`w-5 h-5 rounded-full border-2 border-[var(--border-color)] transition-transform ${
                               subColor === c ? 'scale-110 ring-2 ring-black' : ''
                             }`}
                             style={{ backgroundColor: c, cursor: 'pointer' }}
@@ -1261,14 +1261,14 @@ export default function FloatingHub() {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       CANCEL
                     </button>
                     <button
                       type="submit"
-                      className="w-1/2 bg-[#C084FC] hover:bg-purple-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+                      className="w-1/2 bg-[var(--accent-purple)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[#000000] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
                       style={{ cursor: 'pointer' }}
                     >
                       {editingSubscription ? 'SAVE SUBSCRIPTION' : 'SECURE SUBSCRIPTION'}

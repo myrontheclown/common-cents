@@ -39,50 +39,50 @@ export default function SummaryHero({ summary, periodType, periodLabel }: Props)
       transition={{ duration: 0.3 }}
       className="lg:col-span-12"
     >
-      <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-        <div className="flex items-center justify-between flex-wrap gap-2 border-b-2 border-black pb-2 mb-4">
-          <h3 className="font-display text-sm font-bold text-black uppercase tracking-wider">
+      <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+        <div className="flex items-center justify-between flex-wrap gap-2 border-b-2 border-[var(--border-color)] pb-2 mb-4">
+          <h3 className="font-display text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
             {getSectionLabel(periodType)}
           </h3>
           <div className="flex items-center gap-2">
             {periodType !== 'today' && (
-              <span className="font-mono text-[9px] text-gray-500">{periodLabel}</span>
+              <span className="font-mono text-[9px] text-[var(--text-muted)]">{periodLabel}</span>
             )}
-            <span className="font-mono text-[8px] bg-black text-white px-1.5 py-0.5 font-bold tracking-wider">
+            <span className="font-mono text-[8px] bg-[var(--bg-badge)] text-[var(--text-badge)] px-1.5 py-0.5 font-bold tracking-wider">
               {getPeriodBadge(periodType)}
             </span>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="border-2 border-black bg-[#E1FFC2] p-3 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+          <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-success)] bg-[var(--card-income)] p-3 shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
             <div className="flex items-center gap-1.5 mb-1">
-              <TrendingUp className="w-3.5 h-3.5 text-green-700" />
-              <span className="font-mono text-[9px] font-bold text-green-800 uppercase">Income</span>
+              <TrendingUp className="w-3.5 h-3.5 text-[var(--accent-success)]" />
+              <span className="font-mono text-[9px] font-bold text-[var(--accent-success)] uppercase">Income</span>
             </div>
-            <span className="font-display text-lg font-black text-black">{formatCurrencyCompact(summary.income)}</span>
+            <span className="font-display text-lg font-black text-[var(--text-primary)]">{formatCurrencyCompact(summary.income)}</span>
           </div>
-          <div className="border-2 border-black bg-[#FFE2E2] p-3 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+          <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-danger)] bg-[var(--card-expenses)] p-3 shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
             <div className="flex items-center gap-1.5 mb-1">
-              <TrendingDown className="w-3.5 h-3.5 text-red-700" />
-              <span className="font-mono text-[9px] font-bold text-red-800 uppercase">Expenses</span>
+              <TrendingDown className="w-3.5 h-3.5 text-[var(--accent-danger)]" />
+              <span className="font-mono text-[9px] font-bold text-[var(--accent-danger)] uppercase">Expenses</span>
             </div>
-            <span className="font-display text-lg font-black text-black">{formatCurrencyCompact(summary.expenses)}</span>
+            <span className="font-display text-lg font-black text-[var(--text-primary)]">{formatCurrencyCompact(summary.expenses)}</span>
           </div>
-          <div className="border-2 border-black bg-[#E4F2FF] p-3 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+          <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-info)] bg-[var(--card-savings)] p-3 shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
             <div className="flex items-center gap-1.5 mb-1">
-              <Wallet className="w-3.5 h-3.5 text-blue-700" />
-              <span className="font-mono text-[9px] font-bold text-blue-800 uppercase">Savings</span>
+              <Wallet className="w-3.5 h-3.5 text-[var(--accent-info)]" />
+              <span className="font-mono text-[9px] font-bold text-[var(--accent-info)] uppercase">Savings</span>
             </div>
-            <span className={`font-display text-lg font-black ${summary.savings >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+            <span className={`font-display text-lg font-black ${summary.savings >= 0 ? 'text-[var(--accent-success)]' : 'text-[var(--accent-danger)]'}`}>
               {formatCurrencyCompact(summary.savings)}
             </span>
           </div>
-          <div className="border-2 border-black bg-[#FFF0D9] p-3 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+          <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-warning)] bg-[var(--card-cash-flow)] p-3 shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
             <div className="flex items-center gap-1.5 mb-1">
-              <BarChart3 className="w-3.5 h-3.5 text-orange-700" />
-              <span className="font-mono text-[9px] font-bold text-orange-800 uppercase">Cash Flow</span>
+              <BarChart3 className="w-3.5 h-3.5 text-[var(--accent-warning)]" />
+              <span className="font-mono text-[9px] font-bold text-[var(--accent-warning)] uppercase">Cash Flow</span>
             </div>
-            <span className={`font-display text-lg font-black ${summary.cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+            <span className={`font-display text-lg font-black ${summary.cashflow >= 0 ? 'text-[var(--accent-success)]' : 'text-[var(--accent-danger)]'}`}>
               {formatCurrencyCompact(summary.cashflow)}
             </span>
           </div>

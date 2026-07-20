@@ -3,6 +3,13 @@ import type { User } from '@supabase/supabase-js';
 import { getCurrentSession, signOutUser, onAuthStateChange, signInWithEmail, signUpWithEmail, signInWithGoogle, getProfile, createProfile, type UserProfile } from '../lib/auth';
 import { useFinanceStore } from '../store';
 
+export interface OnboardingData {
+  displayName: string;
+  age?: number | null;
+  currency?: string;
+  monthlySavingsGoal?: number;
+}
+
 export interface AuthState {
   user: User | null;
   userId: string | null;
@@ -11,7 +18,7 @@ export interface AuthState {
   error: Error | null;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signUp: (email: string, password: string, onboarding: OnboardingData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -22,6 +29,16 @@ export function useAuth(): AuthState {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const pendingOnboardingRef = useRef<OnboardingData | null>(null);
+
+  const syncProfileToStore = useCallback((p: UserProfile) => {
+    useFinanceStore.getState().updatePreferences({
+      name: p.display_name,
+      age: p.age,
+      currency: p.currency,
+      monthlySavingsGoal: p.monthly_savings_goal,
+    });
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (!user) {
@@ -32,34 +49,46 @@ export function useAuth(): AuthState {
       const existing = await getProfile(user.id);
       if (existing) {
         setProfile(existing);
+        syncProfileToStore(existing);
       } else {
+        const pending = pendingOnboardingRef.current;
         const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User';
+        const isGoogle = user.app_metadata?.provider === 'google';
         const newProfile = {
           id: user.id,
-          display_name: displayName,
+          display_name: pending?.displayName || displayName,
           email: user.email || '',
+          age: pending?.age ?? null,
+          currency: pending?.currency || 'INR',
+          monthly_savings_goal: pending?.monthlySavingsGoal ?? 0,
+          onboarding_completed: !isGoogle,
         };
         await createProfile(newProfile);
-        setProfile({
+        const created: UserProfile = {
           id: newProfile.id,
           email: newProfile.email,
           display_name: newProfile.display_name,
-          currency: 'INR',
-          monthly_savings_goal: 0,
+          age: newProfile.age ?? null,
+          currency: newProfile.currency,
+          monthly_savings_goal: newProfile.monthly_savings_goal,
           category_threshold: 80,
           reminder_enabled: true,
           reminder_time: '21:30',
           current_streak: 0,
           longest_streak: 0,
           last_logged_date: null,
+          onboarding_completed: newProfile.onboarding_completed!,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        };
+        setProfile(created);
+        syncProfileToStore(created);
+        pendingOnboardingRef.current = null;
       }
     } catch {
       setProfile(null);
     }
-  }, [user]);
+  }, [user, syncProfileToStore]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,13 +157,15 @@ export function useAuth(): AuthState {
     }
   }, []);
 
-  const handleSignUp = useCallback(async (email: string, password: string, displayName: string) => {
+  const handleSignUp = useCallback(async (email: string, password: string, onboarding: OnboardingData) => {
     setError(null);
-    const { data, error: signUpError } = await signUpWithEmail(email, password, displayName).then(
+    pendingOnboardingRef.current = onboarding;
+    const { data, error: signUpError } = await signUpWithEmail(email, password, onboarding.displayName).then(
       data => ({ data, error: null }),
       error => ({ data: null, error })
     );
     if (signUpError) {
+      pendingOnboardingRef.current = null;
       setError(signUpError instanceof Error ? signUpError : new Error(signUpError.message));
       throw signUpError;
     }

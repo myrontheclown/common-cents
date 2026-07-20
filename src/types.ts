@@ -98,12 +98,15 @@ export interface AIInsight {
   actionableStep?: string;
 }
 
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 export interface UserPreferences {
   name: string;
+  age: number | null;
   currency: string;
   monthlySavingsGoal: number;
-  categoryThreshold: number; // Spend threshold percentage (e.g., 80)
-  theme: string;
+  categoryThreshold: number;
+  theme: ThemeMode;
   reminderEnabled?: boolean;
   reminderTime?: string;
   currentStreak?: number;

@@ -5,6 +5,7 @@ export interface UserProfile {
   id: string;
   email: string;
   display_name: string;
+  age: number | null;
   currency: string;
   monthly_savings_goal: number;
   category_threshold: number;
@@ -13,6 +14,7 @@ export interface UserProfile {
   current_streak: number;
   longest_streak: number;
   last_logged_date: string | null;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -78,12 +80,20 @@ export async function createProfile(profile: {
   id: string;
   display_name: string;
   email: string;
+  age?: number | null;
+  currency?: string;
+  monthly_savings_goal?: number;
+  onboarding_completed?: boolean;
 }): Promise<void> {
   const { error } = await supabase.from('users').upsert(
     {
       id: profile.id,
       email: profile.email,
       display_name: profile.display_name,
+      age: profile.age ?? null,
+      currency: profile.currency ?? 'INR',
+      monthly_savings_goal: profile.monthly_savings_goal ?? 0,
+      onboarding_completed: profile.onboarding_completed ?? true,
     },
     { onConflict: 'id' }
   );

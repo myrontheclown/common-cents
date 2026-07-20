@@ -1,9 +1,27 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const CURRENCIES = [
+  { value: 'INR', label: 'INR (₹)' },
+  { value: 'USD', label: 'USD ($)' },
+  { value: 'EUR', label: 'EUR (€)' },
+  { value: 'GBP', label: 'GBP (£)' },
+  { value: 'JPY', label: 'JPY (¥)' },
+  { value: 'CAD', label: 'CAD (C$)' },
+  { value: 'AUD', label: 'AUD (A$)' },
+  { value: 'SGD', label: 'SGD (S$)' },
+  { value: 'AED', label: 'AED (د.إ)' },
+  { value: 'CHF', label: 'CHF (Fr)' },
+];
+
 interface AuthPageProps {
   onSignIn: (email: string, password: string) => Promise<void>;
-  onSignUp: (email: string, password: string, displayName: string) => Promise<void>;
+  onSignUp: (email: string, password: string, onboarding: {
+    displayName: string;
+    age?: number | null;
+    currency?: string;
+    monthlySavingsGoal?: number;
+  }) => Promise<void>;
   onGoogleSignIn: () => Promise<void>;
 }
 
@@ -15,6 +33,9 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [age, setAge] = useState('');
+  const [currency, setCurrency] = useState('INR');
+  const [monthlySavingsGoal, setMonthlySavingsGoal] = useState('50000');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,10 +43,12 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
     if (!email.trim()) { setError('Email address is required.'); return false; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Please enter a valid email address.'); return false; }
     if (!password) { setError('Password is required.'); return false; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return false; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return false; }
     if (mode === 'signup') {
       if (!displayName.trim()) { setError('Display name is required.'); return false; }
       if (password !== confirmPassword) { setError('Passwords do not match.'); return false; }
+      if (age && (isNaN(Number(age)) || Number(age) <= 0)) { setError('Age must be a positive number.'); return false; }
+      if (monthlySavingsGoal && (isNaN(Number(monthlySavingsGoal)) || Number(monthlySavingsGoal) < 0)) { setError('Monthly savings goal must be 0 or greater.'); return false; }
     }
     return true;
   };
@@ -39,7 +62,12 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
       if (mode === 'signin') {
         await onSignIn(email, password);
       } else {
-        await onSignUp(email, password, displayName);
+        await onSignUp(email, password, {
+          displayName: displayName.trim(),
+          age: age ? Number(age) : null,
+          currency,
+          monthlySavingsGoal: monthlySavingsGoal ? Number(monthlySavingsGoal) : undefined,
+        });
       }
     } catch (err: any) {
       setError(err?.message || 'Authentication failed. Please try again.');
@@ -65,25 +93,25 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center p-4 font-sans">
+    <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center p-4 font-sans">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className="w-full max-w-md"
       >
-        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-8 shadow-[12px_12px_0px_0px_var(--shadow-color)]">
           {/* BRANDING */}
           <div className="text-center mb-8">
-            <div className="bg-[#FFDE4D] border-2 border-black p-2 inline-block mb-4 shadow-[3px_3px_0px_rgba(0,0,0,1)]">
-              <span className="font-display text-2xl font-black tracking-tight text-black">
+            <div className="bg-[var(--accent-primary)] border-2 border-[var(--border-color)] p-2 inline-block mb-4 shadow-[3px_3px_0px_var(--shadow-color)]">
+              <span className="font-display text-2xl font-black tracking-tight text-[var(--text-primary)]">
                 C.C
               </span>
             </div>
-            <h1 className="font-display text-3xl font-black text-black tracking-tight uppercase">
+            <h1 className="font-display text-3xl font-black text-[var(--text-primary)] tracking-tight uppercase">
               COMMON CENTS
             </h1>
-            <p className="font-mono text-xs text-gray-600 mt-2 uppercase tracking-wider">
+            <p className="font-mono text-xs text-[var(--text-muted)] mt-2 uppercase tracking-wider">
               Own your money. Not the other way around.
             </p>
           </div>
@@ -92,7 +120,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
           <button
             onClick={handleGoogle}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border-3 border-black py-3 px-4 font-mono text-xs font-bold text-black shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow-[4px_4px_0px_rgba(0,0,0,1)] mb-6"
+            className="w-full flex items-center justify-center gap-3 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-3 border-[var(--border-color)] py-3 px-4 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[4px_4px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow-[4px_4px_0px_var(--shadow-color)] mb-6"
             style={{ cursor: loading ? 'not-allowed' : 'pointer' }}
           >
             <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
@@ -106,9 +134,9 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
 
           {/* OR DIVIDER */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-grow border-t-2 border-black" />
-            <span className="font-mono text-[10px] font-bold text-black uppercase tracking-widest">OR</span>
-            <div className="flex-grow border-t-2 border-black" />
+            <div className="flex-grow border-t-2 border-[var(--border-color)]" />
+            <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-widest">OR</span>
+            <div className="flex-grow border-t-2 border-[var(--border-color)]" />
           </div>
 
           {/* FORM */}
@@ -122,7 +150,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                  <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                     DISPLAY NAME
                   </label>
                   <input
@@ -130,7 +158,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
                     placeholder="e.g. Alex Rivera"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full bg-white border-2 border-black p-2.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                    className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                     autoFocus={mode === 'signup'}
                   />
                 </motion.div>
@@ -138,7 +166,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
             </AnimatePresence>
 
             <div>
-              <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+              <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                 EMAIL ADDRESS
               </label>
               <input
@@ -146,22 +174,22 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white border-2 border-black p-2.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                 autoFocus={mode === 'signin'}
                 autoComplete="email"
               />
             </div>
 
             <div>
-              <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+              <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                 PASSWORD
               </label>
               <input
                 type="password"
-                placeholder={mode === 'signup' ? 'Minimum 6 characters' : 'Enter your password'}
+                placeholder={mode === 'signup' ? 'Minimum 8 characters' : 'Enter your password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white border-2 border-black p-2.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                 autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               />
             </div>
@@ -175,7 +203,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <label className="font-mono text-[10px] font-bold text-black block mb-1 uppercase tracking-wider">
+                  <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                     CONFIRM PASSWORD
                   </label>
                   <input
@@ -183,9 +211,74 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
                     placeholder="Re-enter your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-white border-2 border-black p-2.5 font-mono text-xs outline-none focus:bg-[#FFFDEB] transition-colors"
+                    className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
                     autoComplete="new-password"
                   />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ONBOARDING FIELDS (Sign-up only) */}
+            <AnimatePresence mode="wait">
+              {mode === 'signup' && (
+                <motion.div
+                  key="onboarding"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="border-t-2 border-[var(--border-color)] pt-4 mt-1"
+                >
+                  <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block mb-3 uppercase tracking-wider">
+                    OPTIONAL PERSONALIZATION
+                  </span>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                        AGE <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="150"
+                        placeholder="e.g. 28"
+                        value={age}
+                        onChange={(e) => setAge(e.target.value)}
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                        CURRENCY <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span>
+                      </label>
+                      <select
+                        value={currency}
+                        onChange={(e) => setCurrency(e.target.value)}
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
+                      >
+                        {CURRENCIES.map(c => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                      MONTHLY SAVINGS GOAL <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      placeholder="50000"
+                      value={monthlySavingsGoal}
+                      onChange={(e) => setMonthlySavingsGoal(e.target.value)}
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
+                    />
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -197,9 +290,9 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-[#FF9F9F] border-2 border-black p-2.5 font-mono text-[11px] font-bold text-black"
+                  className="bg-[var(--accent-danger)] border-2 border-[var(--border-color)] p-2.5 font-mono text-[11px] font-bold text-[#000000]"
                 >
-                  <span className="text-black">[AUTH_ERROR]:</span> {error}
+                  <span className="text-[var(--text-primary)]">[AUTH_ERROR]:</span> {error}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -207,12 +300,12 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#FFDE4D] hover:bg-yellow-400 border-3 border-black py-3 font-display text-sm font-bold text-black shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow-[4px_4px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
+              className="w-full bg-[var(--accent-primary)] border-3 border-[var(--border-color)] py-3 font-display text-sm font-bold text-[#000000] shadow-[4px_4px_0px_var(--shadow-color)] hover:shadow-[5px_5px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-x-0 disabled:active:translate-y-0 disabled:active:shadow-[4px_4px_0px_var(--shadow-color)] flex items-center justify-center gap-2"
               style={{ cursor: loading ? 'not-allowed' : 'pointer' }}
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[var(--border-color)] border-t-transparent rounded-full animate-spin" />
                   <span>{mode === 'signin' ? 'SIGNING IN...' : 'CREATING ACCOUNT...'}</span>
                 </>
               ) : (
@@ -225,7 +318,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
           <div className="mt-6 text-center">
             <button
               onClick={switchMode}
-              className="font-mono text-[11px] text-gray-600 hover:text-black underline underline-offset-2 transition-colors"
+              className="font-mono text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] underline underline-offset-2 transition-colors"
               style={{ cursor: 'pointer' }}
             >
               {mode === 'signin' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
@@ -235,7 +328,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
 
         {/* FOOTER */}
         <div className="mt-6 text-center">
-          <p className="font-mono text-[9px] text-gray-400 uppercase tracking-widest">
+          <p className="font-mono text-[9px] text-[var(--text-muted)] uppercase tracking-widest">
             Designed with Neubrutalist precision
           </p>
         </div>

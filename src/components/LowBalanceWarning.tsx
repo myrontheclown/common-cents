@@ -26,20 +26,20 @@ export default function LowBalanceWarning({
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+        className="absolute inset-0 bg-[var(--bg-badge)]/60 backdrop-blur-xs"
         onClick={onClose}
       />
-      <div className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_rgba(0,0,0,1)] max-w-md w-full relative z-[210]">
-        <div className="border-b-4 border-black pb-3 mb-4 flex items-center justify-between">
+      <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-6 shadow-[8px_8px_0px_var(--shadow-color)] max-w-md w-full relative z-[210]">
+        <div className="border-b-4 border-[var(--border-color)] pb-3 mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-red-500" />
-            <h3 className="font-display text-xl font-black text-black uppercase tracking-tight">
+            <h3 className="font-display text-xl font-black text-[var(--text-primary)] uppercase tracking-tight">
               LOW VAULT BALANCE
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 bg-black text-white hover:bg-zinc-800 border-2 border-black transition-colors"
+            className="p-1 bg-[var(--bg-badge)] text-[var(--text-badge)] hover:bg-zinc-800 border-2 border-[var(--border-color)] transition-colors"
             style={{ cursor: 'pointer' }}
           >
             <X className="w-4 h-4 stroke-[2.5px]" />
@@ -47,22 +47,22 @@ export default function LowBalanceWarning({
         </div>
 
         <div className="space-y-3 font-mono text-xs">
-          <div className="bg-gray-50 border-2 border-black p-3 space-y-2">
+          <div className="bg-[var(--bg-muted)] border-2 border-[var(--border-color)] p-3 space-y-2">
             <div className="flex justify-between">
-              <span className="font-bold text-gray-600">Current Balance</span>
-              <span className="font-bold text-black">{fmt(currentBalance)}</span>
+              <span className="font-bold text-[var(--text-muted)]">Current Balance</span>
+              <span className="font-bold text-[var(--text-primary)]">{fmt(currentBalance)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-gray-600">Transaction</span>
+              <span className="font-bold text-[var(--text-muted)]">Transaction</span>
               <span className="font-bold text-red-600">-{fmt(transactionAmount)}</span>
             </div>
-            <div className="border-t border-black/20 pt-2 flex justify-between">
-              <span className="font-bold text-gray-600">Balance After</span>
+            <div className="border-t border-[var(--border-color)]/20 pt-2 flex justify-between">
+              <span className="font-bold text-[var(--text-muted)]">Balance After</span>
               <span className="font-bold text-red-600">{fmt(projectedBalance)}</span>
             </div>
           </div>
 
-          <div className="bg-[#FF9F9F] border-2 border-black p-2.5 font-mono text-[10px] font-bold text-black text-center uppercase">
+          <div className="bg-[var(--card-bg)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-danger)] p-2.5 font-mono text-[10px] font-bold text-[var(--accent-danger)] text-center uppercase">
             This transaction will overdraw this vault.
           </div>
         </div>
@@ -71,7 +71,7 @@ export default function LowBalanceWarning({
           <button
             type="button"
             onClick={onClose}
-            className="w-1/2 bg-white hover:bg-gray-50 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+            className="w-1/2 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
             style={{ cursor: 'pointer' }}
           >
             Cancel
@@ -79,7 +79,7 @@ export default function LowBalanceWarning({
           <button
             type="button"
             onClick={onConfirm}
-            className="w-1/2 bg-[#FF78C4] hover:bg-pink-400 border-2 border-black py-2.5 font-mono text-xs font-bold text-black shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-y-[1.5px] active:shadow-none transition-all"
+            className="w-1/2 bg-[var(--accent-danger)] border-2 border-[var(--border-color)] py-2.5 font-mono text-xs font-bold text-[#000000] shadow-[3px_3px_0px_var(--shadow-color)] hover:shadow-[4px_4px_0px_var(--shadow-color)] active:translate-y-[1.5px] active:shadow-none transition-all"
             style={{ cursor: 'pointer' }}
           >
             Proceed Anyway

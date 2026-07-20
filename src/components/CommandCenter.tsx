@@ -367,7 +367,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
 
   // Icons helper for achievements
   const renderAchievementIcon = (icon: string, unlocked: boolean) => {
-    const cls = `w-5 h-5 ${unlocked ? 'text-black' : 'text-gray-400'}`;
+    const cls = `w-5 h-5 ${unlocked ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`;
     switch (icon) {
       case 'Sparkles': return <Sparkles className={cls} />;
       case 'Flame': return <Flame className={cls} />;
@@ -396,77 +396,77 @@ console.table(
       <div className="lg:col-span-7 flex flex-col gap-6">
         
         {/* SECTION 1: HERE IS YOUR MONEY */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h2 className="font-display text-lg font-extrabold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-[var(--section-money)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h2 className="font-display text-lg font-extrabold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
             <span className="text-xl">💰</span> HERE IS YOUR MONEY
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             {/* Net Worth Card */}
-            <div className="bg-[#FFE17D] border-2 border-black p-3 shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)] col-span-2 md:col-span-1">
-              <span className="font-mono text-[9px] font-bold text-gray-700 block uppercase">Total Net Worth</span>
-              <span className="font-display text-xl font-extrabold text-black block overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="bg-[var(--card-net-worth)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-purple)] p-3 shadow-[2.5px_2.5px_0px_var(--shadow-color)] col-span-2 md:col-span-1 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase">Total Net Worth</span>
+              <span className="font-display text-xl font-extrabold text-[var(--text-primary)] block overflow-hidden text-ellipsis whitespace-nowrap">
                 ₹{totalNetWorth.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
-              <span className="font-mono text-[8px] text-gray-500 uppercase">OS Global Solvency</span>
+              <span className="font-mono text-[8px] text-[var(--text-muted)] uppercase">OS Global Solvency</span>
             </div>
 
             {/* Income Card */}
-            <div className="bg-[#9DF1DF] border-2 border-black p-3 shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[9px] font-bold text-gray-700 block uppercase">Income</span>
-              <span className="font-display text-lg font-extrabold text-black block overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="bg-[var(--card-income)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-success)] p-3 shadow-[2.5px_2.5px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase">Income</span>
+              <span className="font-display text-lg font-extrabold text-[var(--accent-success)] block overflow-hidden text-ellipsis whitespace-nowrap">
                 +₹{totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
-              <span className="font-mono text-[8px] text-gray-500">Inflows Recorded</span>
+              <span className="font-mono text-[8px] text-[var(--text-muted)]">Inflows Recorded</span>
             </div>
 
             {/* Expenses Card */}
-            <div className="bg-[#FF9F9F] border-2 border-black p-3 shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[9px] font-bold text-gray-700 block uppercase">Expenses</span>
-              <span className="font-display text-lg font-extrabold text-red-600 block overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="bg-[var(--card-expenses)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-danger)] p-3 shadow-[2.5px_2.5px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase">Expenses</span>
+              <span className="font-display text-lg font-extrabold text-[var(--accent-danger)] block overflow-hidden text-ellipsis whitespace-nowrap">
                 -₹{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
-              <span className="font-mono text-[8px] text-gray-500">Outflows Recorded</span>
+              <span className="font-mono text-[8px] text-[var(--text-muted)]">Outflows Recorded</span>
             </div>
 
             {/* Savings Card */}
-            <div className="bg-[#A5F3FC] border-2 border-black p-3 shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[9px] font-bold text-gray-700 block uppercase">Savings</span>
-              <span className="font-display text-lg font-extrabold text-black block overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="bg-[var(--card-savings)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-info)] p-3 shadow-[2.5px_2.5px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase">Savings</span>
+              <span className="font-display text-lg font-extrabold text-[var(--accent-info)] block overflow-hidden text-ellipsis whitespace-nowrap">
                 ₹{savings.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
-              <span className="font-mono text-[8px] text-gray-500">Flow Delta Balance</span>
+              <span className="font-mono text-[8px] text-[var(--text-muted)]">Flow Delta Balance</span>
             </div>
 
             {/* Current Logging Streak Card */}
-            <div className="bg-[#FB923C] border-2 border-black p-3 shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
+            <div className="bg-[var(--card-streak)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-warning)] p-3 shadow-[2.5px_2.5px_0px_var(--shadow-color)] flex flex-col justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_var(--shadow-color)]">
               <div>
-                <span className="font-mono text-[9px] font-bold text-gray-800 block uppercase flex items-center gap-1">
-                  <Flame className="w-3.5 h-3.5 text-black fill-current animate-pulse" /> STREAK
+                <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 text-[var(--accent-warning)] fill-current animate-pulse" /> STREAK
                 </span>
-                <span className="font-display text-xl font-extrabold text-black block mt-1 uppercase overflow-hidden text-ellipsis whitespace-nowrap">
+                <span className="font-display text-xl font-extrabold text-[var(--text-primary)] block mt-1 uppercase overflow-hidden text-ellipsis whitespace-nowrap">
                   {preferences.currentStreak ?? 0} { (preferences.currentStreak ?? 0) === 1 ? 'DAY' : 'DAYS' }
                 </span>
               </div>
-              <span className="font-mono text-[8px] text-gray-700 uppercase mt-2 block overflow-hidden text-ellipsis whitespace-nowrap">
+              <span className="font-mono text-[8px] text-[var(--text-muted)] uppercase mt-2 block overflow-hidden text-ellipsis whitespace-nowrap">
                 Longest: {preferences.longestStreak ?? 0}
               </span>
             </div>
 
             {/* Safe to Spend Today */}
-            <div className="bg-[#E1FFC2] border-2 border-black p-3 shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)] col-span-2 md:col-span-1">
-              <span className="font-mono text-[9px] font-bold text-gray-700 block uppercase">Safe to spend today</span>
-              <span className="font-display text-xl font-extrabold text-black block overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="bg-[var(--card-safe-to-spend)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-success)] p-3 shadow-[2.5px_2.5px_0px_var(--shadow-color)] col-span-2 md:col-span-1 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase">Safe to spend today</span>
+              <span className="font-display text-xl font-extrabold text-[var(--accent-success)] block overflow-hidden text-ellipsis whitespace-nowrap">
                 ₹{safeToSpendToday.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
               </span>
-              <span className="font-mono text-[8px] text-gray-500 uppercase">Calculated daily velocity cap</span>
+              <span className="font-mono text-[8px] text-[var(--text-muted)] uppercase">Calculated daily velocity cap</span>
             </div>
           </div>
 
           {/* Quick Transaction Addition form inside section 1 */}
-          <div className="bg-gray-50 border-2 border-black p-4 mt-2">
-            <h3 className="font-display text-xs font-bold text-black uppercase mb-3 flex items-center gap-1">
-              <Plus className="w-3.5 h-3.5 text-black" />
+          <div className="bg-[var(--bg-muted)] border-2 border-[var(--border-color)] p-4 mt-2">
+            <h3 className="font-display text-xs font-bold text-[var(--text-primary)] uppercase mb-3 flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5 text-[var(--text-primary)]" />
               QUICK TRANSMISSION VALVE (INJECT CASHFLOW)
             </h3>
             <form onSubmit={handleTransactionSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -476,7 +476,7 @@ console.table(
                   placeholder="e.g. Uber Ride"
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
-                  className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none"
+                  className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none"
                   required
                 />
               </div>
@@ -487,7 +487,7 @@ console.table(
                   placeholder="Amount ₹"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none"
+                  className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none"
                   required
                 />
               </div>
@@ -495,7 +495,7 @@ console.table(
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none"
+                  className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none"
                   disabled={type === 'income'}
                 >
                   {categoriesList.map(c => (
@@ -507,14 +507,14 @@ console.table(
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as any)}
-                  className="w-full bg-white border-2 border-black p-1.5 font-mono text-xs outline-none"
+                  className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none"
                 >
                   <option value="expense">DEBIT</option>
                   <option value="income">CREDIT</option>
                 </select>
                 <button
                   type="submit"
-                  className="bg-[#FF78C4] text-black font-display font-extrabold text-xs px-3 border-2 border-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  className="bg-[var(--accent-primary)] text-[#000000] font-display font-extrabold text-xs px-3 border-2 border-[var(--border-color)] shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                   style={{ cursor: 'pointer' }}
                 >
                   TX
@@ -525,93 +525,93 @@ console.table(
         </div>
 
         {/* SECTION 2: ARE YOU DOING WELL? */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h2 className="font-display text-lg font-extrabold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-[var(--section-analytics)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h2 className="font-display text-lg font-extrabold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
             <span className="text-xl">📈</span> ARE YOU DOING WELL?
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {/* Financial Score */}
-            <div className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-center">
-              <span className="font-mono text-[8px] font-bold text-gray-500 uppercase block">Financial score</span>
-              <span className="font-display text-2xl font-extrabold text-black block my-1">
+            <div className="border-2 border-[var(--border-color)] p-3 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)] text-center">
+              <span className="font-mono text-[8px] font-bold text-[var(--text-muted)] uppercase block">Financial score</span>
+              <span className="font-display text-2xl font-extrabold text-[var(--text-primary)] block my-1">
                 {financialScore}/100
               </span>
-              <div className="w-full bg-gray-100 h-2 border border-black">
-                <div className="bg-[#4ADE80] h-full" style={{ width: `${financialScore}%` }} />
+              <div className="w-full bg-[var(--bg-muted)] h-2 border border-[var(--border-color)]">
+                <div className="bg-[var(--accent-success)] h-full" style={{ width: `${financialScore}%` }} />
               </div>
             </div>
 
             {/* Budget Score */}
-            <div className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-center">
-              <span className="font-mono text-[8px] font-bold text-gray-500 uppercase block">Budget score</span>
-              <span className="font-display text-2xl font-extrabold text-black block my-1">
+            <div className="border-2 border-[var(--border-color)] p-3 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)] text-center">
+              <span className="font-mono text-[8px] font-bold text-[var(--text-muted)] uppercase block">Budget score</span>
+              <span className="font-display text-2xl font-extrabold text-[var(--text-primary)] block my-1">
                 {budgetScore}/100
               </span>
-              <div className="w-full bg-gray-100 h-2 border border-black">
-                <div className="bg-[#FF78C4] h-full" style={{ width: `${budgetScore}%` }} />
+              <div className="w-full bg-[var(--bg-muted)] h-2 border border-[var(--border-color)]">
+                <div className="bg-[var(--accent-warning)] h-full" style={{ width: `${budgetScore}%` }} />
               </div>
             </div>
 
             {/* Savings Score */}
-            <div className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-center">
-              <span className="font-mono text-[8px] font-bold text-gray-500 uppercase block">Savings score</span>
-              <span className="font-display text-2xl font-extrabold text-black block my-1">
+            <div className="border-2 border-[var(--border-color)] p-3 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)] text-center">
+              <span className="font-mono text-[8px] font-bold text-[var(--text-muted)] uppercase block">Savings score</span>
+              <span className="font-display text-2xl font-extrabold text-[var(--text-primary)] block my-1">
                 {savingsScore}/100
               </span>
-              <div className="w-full bg-gray-100 h-2 border border-black">
-                <div className="bg-[#38BDF8] h-full" style={{ width: `${savingsScore}%` }} />
+              <div className="w-full bg-[var(--bg-muted)] h-2 border border-[var(--border-color)]">
+                <div className="bg-[var(--accent-info)] h-full" style={{ width: `${savingsScore}%` }} />
               </div>
             </div>
 
             {/* Goal Score */}
-            <div className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-center">
-              <span className="font-mono text-[8px] font-bold text-gray-500 uppercase block">Goal score</span>
-              <span className="font-display text-2xl font-extrabold text-black block my-1">
+            <div className="border-2 border-[var(--border-color)] p-3 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)] text-center">
+              <span className="font-mono text-[8px] font-bold text-[var(--text-muted)] uppercase block">Goal score</span>
+              <span className="font-display text-2xl font-extrabold text-[var(--text-primary)] block my-1">
                 {goalScore}/100
               </span>
-              <div className="w-full bg-gray-100 h-2 border border-black">
-                <div className="bg-[#FFE17D] h-full" style={{ width: `${goalScore}%` }} />
+              <div className="w-full bg-[var(--bg-muted)] h-2 border border-[var(--border-color)]">
+                <div className="bg-[var(--accent-primary)] h-full" style={{ width: `${goalScore}%` }} />
               </div>
             </div>
 
             {/* Spending Score */}
-            <div className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)] text-center col-span-2 md:col-span-1">
-              <span className="font-mono text-[8px] font-bold text-gray-500 uppercase block">Spending score</span>
-              <span className="font-display text-2xl font-extrabold text-black block my-1">
+            <div className="border-2 border-[var(--border-color)] p-3 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)] text-center col-span-2 md:col-span-1">
+              <span className="font-mono text-[8px] font-bold text-[var(--text-muted)] uppercase block">Spending score</span>
+              <span className="font-display text-2xl font-extrabold text-[var(--text-primary)] block my-1">
                 {spendingScore}/100
               </span>
-              <div className="w-full bg-gray-100 h-2 border border-black">
-                <div className="bg-[#FB923C] h-full" style={{ width: `${spendingScore}%` }} />
+              <div className="w-full bg-[var(--bg-muted)] h-2 border border-[var(--border-color)]">
+                <div className="bg-[var(--accent-warning)] h-full" style={{ width: `${spendingScore}%` }} />
               </div>
             </div>
           </div>
         </div>
 
         {/* SECTION 3: WHERE DID YOUR MONEY GO? */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h2 className="font-display text-lg font-extrabold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-[var(--section-money)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h2 className="font-display text-lg font-extrabold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
             <span className="text-xl">🗺️</span> WHERE DID YOUR MONEY GO?
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             
             {/* Weekly Spending */}
-            <div className="border-2 border-black p-3.5 bg-gray-50 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-              <h3 className="font-mono text-[10px] font-bold text-black uppercase mb-3 tracking-wide">
+            <div className="border-2 border-[var(--border-color)] p-3.5 bg-[var(--bg-muted)] shadow-[2px_2px_0px_var(--shadow-color)]">
+              <h3 className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase mb-3 tracking-wide">
                 Weekly spending (Last 7 Days)
               </h3>
               <div className="flex flex-col gap-2.5">
                 {last7Days.map((day) => (
                   <div key={day.date} className="flex items-center justify-between text-xs font-mono">
-                    <span className="font-bold text-black w-10">{day.dayName}</span>
-                    <div className="flex-grow bg-white border border-black h-4 mx-2 relative overflow-hidden">
+                    <span className="font-bold text-[var(--text-primary)] w-10">{day.dayName}</span>
+                    <div className="flex-grow bg-[var(--bg-surface)] border border-[var(--border-color)] h-4 mx-2 relative overflow-hidden">
                       <div 
-                        className="bg-[#FF9F9F] h-full border-r border-black"
+                        className="bg-[var(--accent-danger)] h-full border-r border-[var(--border-color)]"
                         style={{ width: `${Math.min(100, (day.amount / 150) * 100)}%` }}
                       />
                     </div>
-                    <span className="font-bold text-black min-w-14 text-right">
+                    <span className="font-bold text-[var(--text-primary)] min-w-14 text-right">
                       ₹{day.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -623,32 +623,32 @@ console.table(
             <div className="flex flex-col gap-4">
               
               {/* Top Category card */}
-              <div className="border-2 border-black p-3.5 bg-[#FFDE4D] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-                <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block">
+              <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-danger)] p-3.5 bg-[var(--card-bg)] shadow-[2px_2px_0px_var(--shadow-color)]">
+                <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block">
                   Top category
                 </span>
-                <span className="font-display text-xl font-black text-black uppercase block leading-tight mt-1">
+                <span className="font-display text-xl font-black text-[var(--text-primary)] uppercase block leading-tight mt-1">
                   {topCategoryName}
                 </span>
-                <span className="font-mono text-[10px] text-gray-700 block">
+                <span className="font-mono text-[10px] text-[var(--text-primary)] block">
                   Aggregate: ₹{topCategorySpent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
               </div>
 
               {/* Spending Heatmap (GitHub Contribution style) */}
-              <div className="border-2 border-black p-3.5 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-                <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-2">
+              <div className="border-2 border-[var(--border-color)] p-3.5 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)]">
+                <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block mb-2">
                   Spending heatmap (Last 28 Days)
                 </span>
                 <div className="grid grid-cols-7 gap-1">
                   {heatmapCells.map((cell, idx) => {
-                    let color = 'bg-gray-100'; // No spending
+                    let color = 'bg-[var(--bg-muted)]'; // No spending
                     if (cell.total > 0 && cell.total <= 30) {
-                      color = 'bg-[#FFDE4D]/40';
+                      color = 'bg-[var(--accent-warning)]/40';
                     } else if (cell.total > 30 && cell.total <= 120) {
-                      color = 'bg-[#FF78C4]/60';
+                      color = 'bg-[var(--accent-danger)]/60';
                     } else if (cell.total > 120) {
-                      color = 'bg-[#FF78C4] border border-black';
+                      color = 'bg-[var(--accent-danger)] border border-[var(--border-color)]';
                     }
                     return (
                       <div 
@@ -659,7 +659,7 @@ console.table(
                     );
                   })}
                 </div>
-                <div className="flex items-center justify-between text-[8px] font-mono text-gray-500 mt-2">
+                <div className="flex items-center justify-between text-[8px] font-mono text-[var(--text-muted)] mt-2">
                   <span>28 DAYS AGO</span>
                   <span>TODAY</span>
                 </div>
@@ -669,8 +669,8 @@ console.table(
           </div>
 
           {/* Monthly Trend Recharts Area */}
-          <div className="border-2 border-black p-4 bg-white shadow-[3px_3px_0px_rgba(0,0,0,1)]">
-            <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
+          <div className="border-2 border-[var(--border-color)] p-4 bg-[var(--bg-surface)] shadow-[3px_3px_0px_var(--shadow-color)]">
+            <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block mb-3">
               Monthly trend (Assets vs Cashflow)
             </span>
             <div className="w-full h-44 font-mono text-[10px]">
@@ -685,7 +685,7 @@ console.table(
                       fontFamily: 'monospace'
                     }} 
                   />
-                  <Area type="monotone" dataKey="NetWorth" stroke="#000" strokeWidth={2} fill="#A5F3FC" fillOpacity={0.6} />
+                  <Area type="monotone" dataKey="NetWorth" stroke="#000" strokeWidth={2} fill="#4F8CC9" fillOpacity={0.6} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -699,15 +699,15 @@ console.table(
       <div className="lg:col-span-5 flex flex-col gap-6">
         
         {/* SECTION 4: WHAT SHOULD YOU KNOW? */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-4">
-            <h2 className="font-display text-lg font-extrabold text-black uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-[var(--section-ai)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <div className="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-4">
+            <h2 className="font-display text-lg font-extrabold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
               <span className="text-xl">💡</span> WHAT SHOULD YOU KNOW?
             </h2>
             <button
               onClick={fetchNewAIInsights}
               disabled={refreshingInsights}
-              className="bg-[#FFDE4D] p-1 border-2 border-black text-[9px] font-mono font-bold shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] hover:bg-yellow-300"
+              className="bg-[var(--accent-primary)] p-1 border-2 border-[var(--border-color)] text-[9px] font-mono font-bold shadow-[1.5px_1.5px_0px_var(--shadow-color)] hover:shadow-[2.5px_2.5px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               style={{ cursor: 'pointer' }}
             >
               {refreshingInsights ? 'SYS_REFRESHING...' : 'REFRESH INTEL'}
@@ -716,7 +716,7 @@ console.table(
 
           <div className="flex flex-col gap-3.5">
             {/* AI Insights block */}
-            <div className="border-2 border-black p-3.5 bg-black text-[#39FF14] font-mono text-xs shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+            <div className="border-2 border-[var(--border-color)] p-3.5 bg-black text-[#39FF14] font-mono text-xs shadow-[2px_2px_0px_var(--shadow-color)]">
               <div className="flex items-center gap-1.5 text-white mb-2 pb-1.5 border-b border-[#39FF14]/30">
                 <Cpu className="w-3.5 h-3.5 text-[#39FF14] animate-pulse" />
                 <span className="font-display text-[10px] font-extrabold text-[#39FF14]">AI insights (Active Diagnostics)</span>
@@ -747,16 +747,16 @@ console.table(
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500">&gt; No active AI insight files loaded.</p>
+                <p className="text-[var(--text-muted)]">&gt; No active AI insight files loaded.</p>
               )}
             </div>
 
             {/* Behavioral analysis card */}
-            <div className="border-2 border-black p-3.5 bg-[#9DF1DF] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block">
+            <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-info)] p-3.5 bg-[var(--card-bg)] shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block">
                 Behavioral analysis
               </span>
-              <p className="font-mono text-[11px] text-gray-800 mt-2 leading-relaxed">
+              <p className="font-mono text-[11px] text-[var(--text-primary)] mt-2 leading-relaxed">
                 {getBehavioralAnalysis()}
               </p>
             </div>
@@ -764,26 +764,26 @@ console.table(
         </div>
 
         {/* SECTION 5: WHAT HAPPENS NEXT? */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h2 className="font-display text-lg font-extrabold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-[var(--section-subscriptions)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h2 className="font-display text-lg font-extrabold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
             <span className="text-xl">🔮</span> WHAT HAPPENS NEXT?
           </h2>
 
           <div className="flex flex-col gap-4">
             
             {/* Active Subscriptions & Drag */}
-            <div className="border-2 border-black p-3.5 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-black/10 pb-2 mb-3">
+            <div className="border-2 border-[var(--border-color)] p-3.5 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)]">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[var(--border-color)]/10 pb-2 mb-3">
                 <div>
-                  <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block">
+                  <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block">
                     Active subscriptions & recurring drag
                   </span>
-                  <span className="font-mono text-[8px] text-gray-400 block uppercase">
+                  <span className="font-mono text-[8px] text-[var(--text-muted)] block uppercase">
                     Continuous capital outflow telemetry
                   </span>
                 </div>
                 <div className="flex gap-1.5">
-                  <div className="bg-[#C084FC] border-2 border-black px-2 py-0.5 font-mono text-xs font-bold text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
+                  <div className="bg-[var(--accent-purple)] border-2 border-[var(--border-color)] px-2 py-0.5 font-mono text-xs font-bold text-[#000000] shadow-[1.5px_1.5px_0px_var(--shadow-color)]">
                     {(() => {
                       const activeSubsList = subscriptions.filter(s => s.active ?? s.isActive ?? true);
                       const totalMonthly = activeSubsList.reduce((sum, s) => {
@@ -813,7 +813,7 @@ console.table(
                   const cycle = sub.billing_cycle || (sub.frequency === 'annual' ? 'yearly' : 'monthly') || 'monthly';
                   const renewalDate = sub.renewal_date || sub.nextBillingDate || '';
                   const isActive = sub.active ?? sub.isActive ?? true;
-                  const subColor = sub.color || '#C084FC';
+                  const subColor = sub.color || '#8B5CF6';
                   const vault = accounts.find(a => a.id === (sub.payment_account || sub.accountId));
                   const linkedPm = paymentMethods.find(pm => pm.accountId === (sub.payment_account || sub.accountId));
 
@@ -848,23 +848,23 @@ console.table(
                   if (diffDays < 0) {
                     renewalLabel = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
                     renewalColor = 'text-red-600';
-                    progressColor = '#FF6B6B';
+                    progressColor = '#DC5C5C';
                   } else if (diffDays === 0) {
                     renewalLabel = 'Renews Today';
                     renewalColor = 'text-orange-600';
-                    progressColor = '#FB923C';
+                    progressColor = '#F59E0B';
                   } else if (diffDays === 1) {
                     renewalLabel = 'Renews Tomorrow';
                     renewalColor = 'text-orange-600';
-                    progressColor = '#FB923C';
+                    progressColor = '#F59E0B';
                   } else if (diffDays <= 7) {
                     renewalLabel = `⚠ Renews in ${diffDays} days`;
                     renewalColor = 'text-amber-600';
-                    progressColor = '#FFDE4D';
+                    progressColor = '#D4A72C';
                   } else {
                     renewalLabel = `🔄 Renews in ${diffDays} days`;
                     renewalColor = 'text-green-600';
-                    progressColor = '#4ADE80';
+                    progressColor = '#22C55E';
                   }
 
                   const nextChargeDate = new Date(renewalDate);
@@ -875,53 +875,53 @@ console.table(
                   }).replace(/ /g, ' ');
 
                   return (
-                    <div key={sub.id} className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                    <div key={sub.id} className="border-2 border-[var(--border-color)] p-3 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)]">
                       <div className="flex items-start gap-3">
                         <div
-                          className="w-9 h-9 border-2 border-black flex items-center justify-center text-lg shrink-0 shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]"
+                          className="w-9 h-9 border-2 border-[var(--border-color)] flex items-center justify-center text-lg shrink-0 shadow-[1.5px_1.5px_0px_var(--shadow-color)]"
                           style={{ backgroundColor: subColor }}
                         >
                           {getSubEmoji(sub.icon)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-display text-sm font-bold text-black truncate">{svcName}</span>
+                            <span className="font-display text-sm font-bold text-[var(--text-primary)] truncate">{svcName}</span>
                             {isActive ? (
-                              <span className="font-mono text-[8px] bg-[#4ADE80] text-black px-1 py-0.5 font-bold border border-black leading-none">🟢 ACTIVE</span>
+                              <span className="font-mono text-[8px] bg-[var(--accent-success)] text-[#000000] px-1 py-0.5 font-bold border border-[var(--border-color)] leading-none">🟢 ACTIVE</span>
                             ) : (
-                              <span className="font-mono text-[8px] bg-gray-300 text-black px-1 py-0.5 font-bold border border-black leading-none">⚪ PAUSED</span>
+                              <span className="font-mono text-[8px] bg-[var(--bg-muted)] text-[var(--text-primary)] px-1 py-0.5 font-bold border border-[var(--border-color)] leading-none">⚪ PAUSED</span>
                             )}
                           </div>
-                          <div className="font-mono text-[11px] font-bold text-black mt-0.5">
+                          <div className="font-mono text-[11px] font-bold text-[var(--text-primary)] mt-0.5">
                             ₹{sub.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycle === 'yearly' ? 'year' : 'month'}
                           </div>
                         </div>
                       </div>
 
-                      <div className={`mt-2 px-1.5 py-0.5 border border-black font-mono text-[9px] font-bold ${renewalColor} inline-block`}>
+                      <div className={`mt-2 px-1.5 py-0.5 border border-[var(--border-color)] font-mono text-[9px] font-bold ${renewalColor} inline-block`}>
                         {renewalLabel}
                       </div>
 
-                      <div className="w-full h-2 border border-black bg-gray-100 mt-2">
+                      <div className="w-full h-2 border border-[var(--border-color)] bg-[var(--bg-muted)] mt-2">
                         <div
                           className="h-full transition-all"
                           style={{ width: `${progressPct}%`, backgroundColor: progressColor }}
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 font-mono text-[9px] text-gray-600">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 font-mono text-[9px] text-[var(--text-muted)]">
                         <span>
                           Next Charge:{' '}
-                          <span className="font-bold text-black">{chargeFormatted}</span>
+                          <span className="font-bold text-[var(--text-primary)]">{chargeFormatted}</span>
                         </span>
                         <span>
                           Vault:{' '}
-                          <span className="font-bold text-black">{vault?.name || 'Direct'}</span>
+                          <span className="font-bold text-[var(--text-primary)]">{vault?.name || 'Direct'}</span>
                         </span>
                         {linkedPm && (
                           <span className="col-span-2">
                             Payment:{' '}
-                            <span className="font-bold text-black">{getPaymentMethodIcon(linkedPm.icon)} {linkedPm.name}</span>
+                            <span className="font-bold text-[var(--text-primary)]">{getPaymentMethodIcon(linkedPm.icon)} {linkedPm.name}</span>
                           </span>
                         )}
                       </div>
@@ -929,39 +929,39 @@ console.table(
                   );
                 })}
                 {subscriptions.filter(s => s.active ?? s.isActive ?? true).length === 0 && (
-                  <div className="text-center py-4 text-gray-400 text-[10px] uppercase font-mono italic">
+                  <div className="text-center py-4 text-[var(--text-muted)] text-[10px] uppercase font-mono italic">
                     No active subscriptions detected.
                   </div>
                 )}
               </div>
 
               {/* LIVE DATABASE TABLE VIEW REPRESENTATION */}
-              <div className="border border-black p-2 bg-gray-50 overflow-x-auto font-mono text-[9px]">
-                <div className="flex items-center justify-between mb-1 pb-1 border-b border-black/10">
-                  <span className="font-bold text-black uppercase text-[8px] text-gray-500">
+              <div className="border border-[var(--border-color)] p-2 bg-[var(--bg-muted)] overflow-x-auto font-mono text-[9px]">
+                <div className="flex items-center justify-between mb-1 pb-1 border-b border-[var(--border-color)]/10">
+                  <span className="font-bold text-[var(--text-primary)] uppercase text-[8px] text-[var(--text-muted)]">
                     🗃️ DB VIEW: [dbo].[subscriptions_table]
                   </span>
-                  <span className="text-[7px] text-gray-400">SCHEMA V2.0 (PERSISTED)</span>
+                  <span className="text-[7px] text-[var(--text-muted)]">SCHEMA V2.0 (PERSISTED)</span>
                 </div>
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-black/20 bg-gray-200/50">
-                      <th className="p-0.5 font-bold text-black uppercase">ID</th>
-                      <th className="p-0.5 font-bold text-black uppercase">NAME</th>
-                      <th className="p-0.5 font-bold text-black uppercase">CYCLE</th>
-                      <th className="p-0.5 font-bold text-black uppercase">AMOUNT</th>
-                      <th className="p-0.5 font-bold text-black uppercase">DEBIT</th>
+                    <tr className="border-b border-[var(--border-color)]/20 bg-gray-200/50">
+                      <th className="p-0.5 font-bold text-[var(--text-primary)] uppercase">ID</th>
+                      <th className="p-0.5 font-bold text-[var(--text-primary)] uppercase">NAME</th>
+                      <th className="p-0.5 font-bold text-[var(--text-primary)] uppercase">CYCLE</th>
+                      <th className="p-0.5 font-bold text-[var(--text-primary)] uppercase">AMOUNT</th>
+                      <th className="p-0.5 font-bold text-[var(--text-primary)] uppercase">DEBIT</th>
                     </tr>
                   </thead>
                   <tbody>
                     {subscriptions.map((s) => (
-                      <tr key={s.id} className="border-b border-black/5 hover:bg-black/5">
-                        <td className="p-0.5 text-gray-400">{s.id}</td>
-                        <td className="p-0.5 font-bold text-black truncate max-w-[80px]">{s.service_name || s.name}</td>
-                        <td className="p-0.5 text-black uppercase">{s.billing_cycle || s.frequency || 'monthly'}</td>
+                      <tr key={s.id} className="border-b border-[var(--border-color)]/5 hover:bg-[var(--bg-badge)]/5">
+                        <td className="p-0.5 text-[var(--text-muted)]">{s.id}</td>
+                        <td className="p-0.5 font-bold text-[var(--text-primary)] truncate max-w-[80px]">{s.service_name || s.name}</td>
+                        <td className="p-0.5 text-[var(--text-primary)] uppercase">{s.billing_cycle || s.frequency || 'monthly'}</td>
                         <td className="p-0.5 text-red-500 font-bold">₹{s.amount}</td>
                         <td className="p-0.5">
-                          <span className={`px-0.5 text-[7px] font-bold uppercase rounded-sm ${s.active ?? s.isActive ? 'bg-[#4ADE80]/20 text-[#22c55e]' : 'bg-[#FF9F9F]/20 text-red-500'}`}>
+                          <span className={`px-0.5 text-[7px] font-bold uppercase rounded-sm ${s.active ?? s.isActive ? 'bg-[var(--accent-success)]/20 text-[var(--accent-success)]' : 'bg-[var(--accent-danger)]/20 text-[var(--accent-danger)]'}`}>
                             {s.active ?? s.isActive ? 'ON' : 'OFF'}
                           </span>
                         </td>
@@ -973,13 +973,13 @@ console.table(
             </div>
 
             {/* Savings Goals */}
-            <div className="border-2 border-black p-3.5 bg-[#FFFDEB] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
+            <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-primary)] p-3.5 bg-[var(--section-goals)] shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block mb-3">
                 Savings Goals
               </span>
 
               {goals.length === 0 ? (
-                <div className="text-center py-4 text-gray-400 text-[10px] uppercase font-mono italic">
+                <div className="text-center py-4 text-[var(--text-muted)] text-[10px] uppercase font-mono italic">
                   No savings goals set up yet.
                 </div>
               ) : (
@@ -989,22 +989,22 @@ console.table(
                     const progress = goal.targetAmount > 0
                       ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
                       : 0;
-                    const statusColor = goal.status === 'completed' ? 'bg-[#4ADE80]'
-                      : goal.status === 'paused' ? 'bg-[#FB923C]'
-                      : 'bg-[#FFDE4D]';
+                    const statusColor = goal.status === 'completed' ? 'bg-[var(--accent-success)]'
+                      : goal.status === 'paused' ? 'bg-[var(--accent-warning)]'
+                      : 'bg-[var(--accent-primary)]';
                     const statusLabel = goal.status === 'completed' ? 'COMPLETED'
                       : goal.status === 'paused' ? 'PAUSED'
                       : 'ACTIVE';
 
                     return (
-                      <div key={goal.id} className="border-2 border-black p-3 bg-white shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                      <div key={goal.id} className="border-2 border-[var(--border-color)] p-3 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)]">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-[11px] font-bold text-black truncate">
+                              <span className="font-mono text-[11px] font-bold text-[var(--text-primary)] truncate">
                                 {goal.name}
                               </span>
-                              <span className={`text-[7px] font-mono font-bold uppercase px-1 py-0.5 border border-black ${statusColor}`}>
+                              <span className={`text-[7px] font-mono font-bold uppercase px-1 py-0.5 border border-[var(--border-color)] ${statusColor}`}>
                                 {statusLabel}
                               </span>
                             </div>
@@ -1014,11 +1014,11 @@ console.table(
                               onClick={() => {
                                 window.dispatchEvent(new CustomEvent('open-edit-goal', { detail: goal }));
                               }}
-                              className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
+                              className="p-1 border border-[var(--border-color)] bg-[var(--accent-primary)] shadow-[1px_1px_0px_var(--shadow-color)] hover:shadow-[2px_2px_0px_var(--shadow-color)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
                               title="Edit goal"
                               style={{ cursor: 'pointer' }}
                             >
-                              <Pencil className="w-3 h-3 text-black" />
+                              <Pencil className="w-3 h-3 text-[var(--text-primary)]" />
                             </button>
                             <button
                               onClick={() => {
@@ -1026,30 +1026,30 @@ console.table(
                                   deleteGoal(goal.id);
                                 }
                               }}
-                              className="p-1 border border-black bg-[#FF9F9F] hover:bg-red-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
+                              className="p-1 border border-[var(--border-color)] bg-[var(--accent-danger)] shadow-[1px_1px_0px_var(--shadow-color)] hover:shadow-[2px_2px_0px_var(--shadow-color)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all"
                               title="Delete goal"
                               style={{ cursor: 'pointer' }}
                             >
-                              <Trash2 className="w-3 h-3 text-black" />
+                              <Trash2 className="w-3 h-3 text-[var(--text-primary)]" />
                             </button>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-[9px] font-mono text-gray-600 mb-1">
+                        <div className="flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)] mb-1">
                           <span>₹{goal.currentAmount.toLocaleString('en-IN')} / ₹{goal.targetAmount.toLocaleString('en-IN')}</span>
-                          <span className="font-bold text-black">{progress}%</span>
+                          <span className="font-bold text-[var(--text-primary)]">{progress}%</span>
                         </div>
 
-                        <div className="w-full bg-gray-100 h-2 border border-black">
+                        <div className="w-full bg-[var(--bg-muted)] h-2 border border-[var(--border-color)]">
                           <div
-                            className="bg-[#FFDE4D] h-full transition-all"
+                            className="bg-[var(--accent-primary)] h-full transition-all"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
 
-                        <div className="flex items-center justify-between mt-1.5 text-[8px] font-mono text-gray-500">
+                        <div className="flex items-center justify-between mt-1.5 text-[8px] font-mono text-[var(--text-muted)]">
                           <span>DEADLINE: {goal.deadline || 'N/A'}</span>
-                          {progress >= 100 && <span className="text-[#22c55e] font-bold">✓ TARGET REACHED</span>}
+                          {progress >= 100 && <span className="text-[var(--accent-success)] font-bold">✓ TARGET REACHED</span>}
                         </div>
                       </div>
                     );
@@ -1059,54 +1059,54 @@ console.table(
             </div>
 
             {/* Mission Objectives */}
-            <div className="border-2 border-black p-3.5 bg-[#FFE2E2] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
+            <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-warning)] p-3.5 bg-[var(--card-bg)] shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block mb-3">
                 Mission objectives
               </span>
-              <div className="flex flex-col gap-2 font-mono text-[11px] text-black">
+              <div className="flex flex-col gap-2 font-mono text-[11px] text-[var(--text-primary)]">
                 <div className="flex items-start gap-2">
-                  <input type="checkbox" checked={subscriptions.filter(s => !s.isActive).length > 0} readOnly className="mt-0.5 accent-black border border-black" />
+                  <input type="checkbox" checked={subscriptions.filter(s => !s.isActive).length > 0} readOnly className="mt-0.5 accent-black border border-[var(--border-color)]" />
                   <div>
                     <span className="font-bold">Slay subscription drag</span>
-                    <span className="text-[9px] text-gray-600 block">Disable 1 or more SaaS subscription leaks.</span>
+                    <span className="text-[9px] text-[var(--text-muted)] block">Disable 1 or more SaaS subscription leaks.</span>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 border-t border-black/5 pt-2">
-                  <input type="checkbox" checked={checkingBalance >= 150000} readOnly className="mt-0.5 accent-black border border-black" />
+                <div className="flex items-start gap-2 border-t border-[var(--border-color)]/5 pt-2">
+                  <input type="checkbox" checked={checkingBalance >= 150000} readOnly className="mt-0.5 accent-black border border-[var(--border-color)]" />
                   <div>
                     <span className="font-bold">Amplify HDFC Checking</span>
-                    <span className="text-[9px] text-gray-600 block">Surge your bank vault reserves past ₹1,50,000 threshold.</span>
+                    <span className="text-[9px] text-[var(--text-muted)] block">Surge your bank vault reserves past ₹1,50,000 threshold.</span>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 border-t border-black/5 pt-2">
-                  <input type="checkbox" checked={(categorySpent['Shopping'] || 0) < 15000} readOnly className="mt-0.5 accent-black border border-black" />
+                <div className="flex items-start gap-2 border-t border-[var(--border-color)]/5 pt-2">
+                  <input type="checkbox" checked={(categorySpent['Shopping'] || 0) < 15000} readOnly className="mt-0.5 accent-black border border-[var(--border-color)]" />
                   <div>
                     <span className="font-bold">Limit Shopping Leak</span>
-                    <span className="text-[9px] text-gray-600 block">Watch your retail indexing limits closely.</span>
+                    <span className="text-[9px] text-[var(--text-muted)] block">Watch your retail indexing limits closely.</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Achievements */}
-            <div className="border-2 border-black p-3.5 bg-[#FFE17D] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
+            <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-purple)] p-3.5 bg-[var(--card-bg)] shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block mb-3">
                 Achievements
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {achievements.map((ach) => (
                   <div 
                     key={ach.id} 
-                    className={`border border-black p-2 flex items-center gap-2 ${
-                      ach.isUnlocked ? 'bg-[#E1FFC2]' : 'bg-gray-100 opacity-60 border-dashed'
+                    className={`border border-[var(--border-color)] p-2 flex items-center gap-2 ${
+                      ach.isUnlocked ? 'bg-[#E1FFC2]' : 'bg-[var(--bg-muted)] opacity-60 border-dashed'
                     }`}
                   >
-                    <div className="p-1.5 border border-black bg-white shrink-0">
+                    <div className="p-1.5 border border-[var(--border-color)] bg-[var(--bg-surface)] shrink-0">
                       {renderAchievementIcon(ach.icon, ach.isUnlocked)}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-display font-black text-[9px] text-black uppercase truncate">{ach.title}</p>
-                      <p className="font-mono text-[8px] text-gray-500 truncate">{ach.description}</p>
+                      <p className="font-display font-black text-[9px] text-[var(--text-primary)] uppercase truncate">{ach.title}</p>
+                      <p className="font-mono text-[8px] text-[var(--text-muted)] truncate">{ach.description}</p>
                     </div>
                   </div>
                 ))}
@@ -1114,8 +1114,8 @@ console.table(
             </div>
 
             {/* Your Vaults Quick View */}
-            <div className="border-2 border-black p-3.5 bg-[#D2F1FF] shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[10px] font-bold text-black uppercase tracking-wide block mb-3">
+            <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-info)] p-3.5 bg-[var(--card-bg)] shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block mb-3">
                 Your Vaults
               </span>
 
@@ -1130,15 +1130,15 @@ console.table(
                   return (
                     <div
                       key={acc.id}
-                      className={`border-2 border-black p-3.5 shadow-[3px_3px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_rgba(0,0,0,1)] ${
-                        isNegative ? 'bg-red-50' : 'bg-white'
+                      className={`border-2 border-[var(--border-color)] p-3.5 shadow-[3px_3px_0px_var(--shadow-color)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_var(--shadow-color)] ${
+                        isNegative ? 'bg-red-50' : 'bg-[var(--bg-surface)]'
                       }`}
                     >
                       {/* Header Row: Icon + Name + Edit */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span className="text-lg select-none shrink-0">{getVaultEmoji(acc.type)}</span>
-                          <span className="font-display font-bold text-xs text-black uppercase truncate" title={acc.name}>
+                          <span className="font-display font-bold text-xs text-[var(--text-primary)] uppercase truncate" title={acc.name}>
                             {acc.name}
                           </span>
                           {isNegative && (
@@ -1152,31 +1152,31 @@ console.table(
                           onClick={() => {
                             window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
                           }}
-                          className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 shadow-[1px_1px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all shrink-0"
+                          className="p-1 border border-[var(--border-color)] bg-[var(--accent-primary)] shadow-[1px_1px_0px_var(--shadow-color)] hover:shadow-[2px_2px_0px_var(--shadow-color)] active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none transition-all shrink-0"
                           title="Edit Vault"
                           style={{ cursor: 'pointer' }}
                         >
-                          <Pencil className="w-3 h-3 text-black" />
+                          <Pencil className="w-3 h-3 text-[var(--text-primary)]" />
                         </button>
                       </div>
 
                       {/* Large Balance */}
                       <div className={`font-display text-2xl font-black leading-tight mb-2.5 ${
-                        isNegative ? 'text-red-600' : 'text-black'
+                        isNegative ? 'text-red-600' : 'text-[var(--text-primary)]'
                       }`}>
                         {formatINR(acc.balance)}
                       </div>
 
                       {/* Progress Bar: Balance / Total Net Worth */}
                       <div className="mb-2.5">
-                        <div className="flex items-center justify-between text-[9px] font-mono text-gray-500 mb-1">
+                        <div className="flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)] mb-1">
                           <span className="font-bold uppercase">Net Worth Share</span>
-                          <span className="font-bold text-black">{netWorthPct.toFixed(1)}%</span>
+                          <span className="font-bold text-[var(--text-primary)]">{netWorthPct.toFixed(1)}%</span>
                         </div>
-                        <div className="w-full bg-gray-100 h-2.5 border border-black overflow-hidden">
+                        <div className="w-full bg-[var(--bg-muted)] h-2.5 border border-[var(--border-color)] overflow-hidden">
                           <div
-                            className={`h-full border-r border-black transition-all ${
-                              isNegative ? 'bg-red-400' : 'bg-[#38BDF8]'
+                            className={`h-full border-r border-[var(--border-color)] transition-all ${
+                              isNegative ? 'bg-[var(--accent-danger)]' : 'bg-[var(--accent-info)]'
                             }`}
                             style={{ width: `${netWorthPct}%` }}
                           />
@@ -1185,7 +1185,7 @@ console.table(
 
                       {/* Monthly Change */}
                       <div className="flex items-center gap-1 font-mono text-[10px] mb-2.5">
-                        <span className="text-gray-500 uppercase font-bold">Monthly:</span>
+                        <span className="text-[var(--text-muted)] uppercase font-bold">Monthly:</span>
                         {change > 0 ? (
                           <span className="text-green-600 font-bold flex items-center gap-0.5">
                             <ArrowUpRight className="w-3 h-3" /> +{formatINR(change)}
@@ -1195,7 +1195,7 @@ console.table(
                             <ArrowDownRight className="w-3 h-3" /> -{formatINR(Math.abs(change))}
                           </span>
                         ) : (
-                          <span className="text-gray-400 font-bold flex items-center gap-0.5">
+                          <span className="text-[var(--text-muted)] font-bold flex items-center gap-0.5">
                             ▬ No change
                           </span>
                         )}
@@ -1207,7 +1207,7 @@ console.table(
                           {linkedPms.map(pm => (
                             <span
                               key={pm.id}
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 border border-black text-[8px] font-mono font-bold text-purple-700 uppercase leading-none"
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-100 border border-[var(--border-color)] text-[8px] font-mono font-bold text-purple-700 uppercase leading-none"
                             >
                               {getPaymentMethodIcon(pm.icon)} {pm.name}
                             </span>
@@ -1222,7 +1222,7 @@ console.table(
               <div className="mt-3 text-right">
                 <button
                   onClick={() => setIsVaultModalOpen(true)}
-                  className="font-mono text-[10px] font-black text-black hover:underline uppercase tracking-wider"
+                  className="font-mono text-[10px] font-black text-[var(--text-primary)] hover:underline uppercase tracking-wider"
                   style={{ cursor: 'pointer' }}
                 >
                   VAULT INDEX →
@@ -1237,25 +1237,25 @@ console.table(
 
       {/* POPUP MODAL: VAULT INDEX */}
       {isVaultModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-[#FAF6F0] border-4 border-black p-6 w-full max-w-2xl shadow-[8px_8px_0px_rgba(0,0,0,1)] relative my-8">
+        <div className="fixed inset-0 bg-[var(--bg-badge)]/60 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-[var(--bg-page)] border-4 border-[var(--border-color)] p-6 w-full max-w-2xl shadow-[8px_8px_0px_var(--shadow-color)] relative my-8">
             <button 
               onClick={() => setIsVaultModalOpen(false)}
-              className="absolute top-4 right-4 bg-white border-2 border-black p-1 hover:bg-gray-100 active:translate-y-[1px]"
+              className="absolute top-4 right-4 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1 hover:bg-[var(--bg-hover)] active:translate-y-[1px]"
               style={{ cursor: 'pointer' }}
             >
-              <X className="w-4 h-4 text-black" />
+              <X className="w-4 h-4 text-[var(--text-primary)]" />
             </button>
 
-            <h3 className="font-display text-lg font-black text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider">
+            <h3 className="font-display text-lg font-black text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider">
               VAULT INDEX
             </h3>
 
-            <div className="bg-white border-2 border-black p-4 mb-4 shadow-[3px_3px_0px_rgba(0,0,0,1)]">
-              <span className="font-mono text-[10px] font-bold text-gray-500 block uppercase tracking-widest">
+            <div className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-4 mb-4 shadow-[3px_3px_0px_var(--shadow-color)]">
+              <span className="font-mono text-[10px] font-bold text-[var(--text-muted)] block uppercase tracking-widest">
                 TOTAL NET WORTH
               </span>
-              <span className="font-display text-3xl font-black text-black block mt-1">
+              <span className="font-display text-3xl font-black text-[var(--text-primary)] block mt-1">
                 {formatINR(totalNetWorth)}
               </span>
             </div>
@@ -1263,7 +1263,7 @@ console.table(
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-1">
               {accounts.map(acc => {
                 const change = getMonthlyChange(acc.id);
-                const changeColor = change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500';
+                const changeColor = change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-[var(--text-muted)]';
                 const changeStr = change > 0 ? `+${formatINR(change)}` : change < 0 ? `-${formatINR(Math.abs(change))}` : '₹0';
                 
                 const linked = paymentMethods.filter(pm => pm.accountId === acc.id);
@@ -1271,57 +1271,57 @@ console.table(
                 const lastTx = getLastTransaction(acc.id);
 
                 return (
-                  <div key={acc.id} className="border-2 border-black bg-white p-4 shadow-[3px_3px_0px_rgba(0,0,0,1)] flex flex-col gap-3">
-                    <div className="flex items-center gap-2 border-b-2 border-black pb-1.5">
+                  <div key={acc.id} className="border-2 border-[var(--border-color)] bg-[var(--bg-surface)] p-4 shadow-[3px_3px_0px_var(--shadow-color)] flex flex-col gap-3">
+                    <div className="flex items-center gap-2 border-b-2 border-[var(--border-color)] pb-1.5">
                       <span className="text-xl select-none">{getVaultEmoji(acc.type)}</span>
-                      <span className="font-display font-black text-sm uppercase text-black flex-1">{acc.name}</span>
+                      <span className="font-display font-black text-sm uppercase text-[var(--text-primary)] flex-1">{acc.name}</span>
                       <button
                         onClick={() => {
                           window.dispatchEvent(new CustomEvent('open-edit-vault', { detail: acc }));
                           setIsVaultModalOpen(false);
                         }}
-                        className="p-1 border border-black bg-[#FFDE4D] hover:bg-yellow-400 active:translate-y-[1px] transition-all"
+                        className="p-1 border border-[var(--border-color)] bg-[var(--accent-primary)] hover:shadow-[2px_2px_0px_var(--shadow-color)] active:translate-y-[1px] transition-all"
                         title="Edit Vault"
                         style={{ cursor: 'pointer' }}
                       >
-                        <Pencil className="w-3.5 h-3.5 text-black" />
+                        <Pencil className="w-3.5 h-3.5 text-[var(--text-primary)]" />
                       </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                       <div>
-                        <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">BALANCE</span>
-                        <span className="font-black text-black text-sm">{formatINR(acc.balance)}</span>
+                        <span className="text-[9px] text-[var(--text-muted)] font-bold block uppercase tracking-wider">BALANCE</span>
+                        <span className="font-black text-[var(--text-primary)] text-sm">{formatINR(acc.balance)}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">MONTHLY CHANGE</span>
+                        <span className="text-[9px] text-[var(--text-muted)] font-bold block uppercase tracking-wider">MONTHLY CHANGE</span>
                         <span className={`font-black text-sm ${changeColor}`}>{changeStr}</span>
                       </div>
                     </div>
 
-                    <div className="text-xs font-mono border-t border-black/5 pt-2">
-                      <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider mb-1">LINKED METHODS</span>
+                    <div className="text-xs font-mono border-t border-[var(--border-color)]/5 pt-2">
+                      <span className="text-[9px] text-[var(--text-muted)] font-bold block uppercase tracking-wider mb-1">LINKED METHODS</span>
                       {linked.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {linked.map(pm => (
-                            <span key={pm.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 border border-black text-[9px] font-bold text-purple-700 uppercase">
+                            <span key={pm.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 border border-[var(--border-color)] text-[9px] font-bold text-purple-700 uppercase">
                               {getPaymentMethodIcon(pm.icon)} {pm.name}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-[9px] text-gray-400 italic">None linked</span>
+                        <span className="text-[9px] text-[var(--text-muted)] italic">None linked</span>
                       )}
                     </div>
 
-                    <div className="text-xs font-mono border-t border-black/5 pt-2">
-                      <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">MOST USED METHOD</span>
-                      <span className="font-bold text-black text-[10px]">{mostUsed}</span>
+                    <div className="text-xs font-mono border-t border-[var(--border-color)]/5 pt-2">
+                      <span className="text-[9px] text-[var(--text-muted)] font-bold block uppercase tracking-wider">MOST USED METHOD</span>
+                      <span className="font-bold text-[var(--text-primary)] text-[10px]">{mostUsed}</span>
                     </div>
 
-                    <div className="text-xs font-mono border-t border-black/5 pt-2 mt-auto">
-                      <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider">LAST ACTIVITY</span>
-                      <p className="text-[10px] text-gray-700 font-bold leading-tight truncate mt-0.5" title={lastTx}>
+                    <div className="text-xs font-mono border-t border-[var(--border-color)]/5 pt-2 mt-auto">
+                      <span className="text-[9px] text-[var(--text-muted)] font-bold block uppercase tracking-wider">LAST ACTIVITY</span>
+                      <p className="text-[10px] text-[var(--text-primary)] font-bold leading-tight truncate mt-0.5" title={lastTx}>
                         {lastTx}
                       </p>
                     </div>

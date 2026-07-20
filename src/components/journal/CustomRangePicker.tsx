@@ -28,23 +28,23 @@ export default function CustomRangePicker({ customStart, customEnd, onStartChang
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="bg-white border-2 border-black p-3 flex flex-col sm:flex-row items-start sm:items-end gap-3 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+        <div className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-3 flex flex-col sm:flex-row items-start sm:items-end gap-3 shadow-[2px_2px_0px_var(--shadow-color)]">
           <div>
-            <label className="font-mono text-[9px] font-bold text-black block mb-1 uppercase">Start Date</label>
+            <label className="font-mono text-[9px] font-bold text-[var(--text-primary)] block mb-1 uppercase">Start Date</label>
             <input
               type="date"
               value={customStart}
               onChange={(e) => onStartChange(e.target.value)}
-              className="bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-yellow-50"
+              className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)]"
             />
           </div>
           <div>
-            <label className="font-mono text-[9px] font-bold text-black block mb-1 uppercase">End Date</label>
+            <label className="font-mono text-[9px] font-bold text-[var(--text-primary)] block mb-1 uppercase">End Date</label>
             <input
               type="date"
               value={customEnd}
               onChange={(e) => onEndChange(e.target.value)}
-              className="bg-white border-2 border-black p-1.5 font-mono text-xs outline-none focus:bg-yellow-50"
+              className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)]"
             />
           </div>
           {customEnd && customStart && customEnd < customStart && (
@@ -53,7 +53,7 @@ export default function CustomRangePicker({ customStart, customEnd, onStartChang
           <button
             onClick={onGenerate}
             disabled={!isValid}
-            className={`bg-[#A5F3FC] text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-[#83ebfa] transition-all ${
+            className={`bg-[var(--accent-info)] text-[#000000] font-display text-xs font-bold px-4 py-2 border-2 border-[var(--border-color)] shadow-[2px_2px_0px_var(--shadow-color)] hover:shadow-[3px_3px_0px_var(--shadow-color)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all ${
               !isValid ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             style={{ cursor: isValid ? 'pointer' : 'default' }}
@@ -64,10 +64,10 @@ export default function CustomRangePicker({ customStart, customEnd, onStartChang
 
         {summary && customStart && customEnd && (
           <div className="mt-2 flex items-center gap-2">
-            <span className="font-mono text-[11px] text-gray-500 font-bold">
+            <span className="font-mono text-[11px] text-[var(--text-muted)] font-bold">
               {formatDate(customStart)} → {formatDate(customEnd)}
             </span>
-            <span className="font-mono text-[9px] text-gray-400">
+            <span className="font-mono text-[9px] text-[var(--text-muted)]">
               &middot; {summary.transactionCount} transactions
             </span>
             <button
@@ -81,7 +81,7 @@ export default function CustomRangePicker({ customStart, customEnd, onStartChang
         )}
 
         {!isValid && !customStart && !customEnd && (
-          <p className="font-mono text-[10px] text-gray-500 mt-2">Select a date range and generate a summary.</p>
+          <p className="font-mono text-[10px] text-[var(--text-muted)] mt-2">Select a date range and generate a summary.</p>
         )}
       </motion.div>
     </div>

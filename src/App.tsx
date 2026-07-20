@@ -12,7 +12,9 @@ import Wrapped from './components/Wrapped';
 import Settings from './components/Settings';
 import FloatingHub from './components/FloatingHub';
 import { useFinanceStore } from './store';
+import type { ThemeMode } from './types';
 import { useAuthContext } from './providers/AuthProvider';
+import GoogleOnboardingModal from './components/GoogleOnboardingModal';
 import { VaultRepository } from './lib/db/repositories';
 import { TransactionRepository } from './lib/db/repositories/TransactionRepository';
 import { PaymentMethodRepository } from './lib/db/repositories/PaymentMethodRepository';
@@ -41,11 +43,27 @@ export default function App() {
   const auth = useAuthContext();
   const [activeTab, setActiveTab] = useState<string>('command_center');
   const [pendingVaultEdit, setPendingVaultEdit] = useState<Account | null>(null);
-  const { preferences, transactions, recalculateStreak, resetAllData, setAccounts, setVaultsHydrated, setTransactions, setTransactionsHydrated, setPaymentMethods, setPaymentMethodsHydrated, setGoals, setGoalsHydrated, setSubscriptions, setSubscriptionsHydrated, setBudgets, setBudgetsHydrated, setAchievements, setAchievementsHydrated } = useFinanceStore();
+  const { preferences, transactions, recalculateStreak, resetAllData, updatePreferences, setAccounts, setVaultsHydrated, setTransactions, setTransactionsHydrated, setPaymentMethods, setPaymentMethodsHydrated, setGoals, setGoalsHydrated, setSubscriptions, setSubscriptionsHydrated, setBudgets, setBudgetsHydrated, setAchievements, setAchievementsHydrated } = useFinanceStore();
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [lastNotificationDate, setLastNotificationDate] = useState<string>('');
+  const [showGoogleOnboarding, setShowGoogleOnboarding] = useState(false);
 
   const prevUserIdRef = useRef<string | null>(null);
+
+  // Theme application
+  useEffect(() => {
+    const theme = preferences.theme;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && mediaQuery.matches);
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    };
+
+    applyTheme();
+    mediaQuery.addEventListener('change', applyTheme);
+    return () => mediaQuery.removeEventListener('change', applyTheme);
+  }, [preferences.theme]);
 
   // Reset all data when user ID changes to prevent stale data from previous user
   useEffect(() => {
@@ -59,6 +77,27 @@ export default function App() {
   useEffect(() => {
     recalculateStreak();
   }, [recalculateStreak]);
+
+  // Google onboarding modal
+  useEffect(() => {
+    if (auth.profile && auth.profile.onboarding_completed === false) {
+      setShowGoogleOnboarding(true);
+    } else {
+      setShowGoogleOnboarding(false);
+    }
+  }, [auth.profile]);
+
+  // Sync profile data to Zustand preferences when profile changes
+  useEffect(() => {
+    const p = auth.profile;
+    if (!p) return;
+    updatePreferences({
+      name: p.display_name,
+      age: p.age,
+      currency: p.currency,
+      monthlySavingsGoal: p.monthly_savings_goal,
+    });
+  }, [auth.profile, updatePreferences]);
 
   useEffect(() => {
     const userId = auth.userId;
@@ -269,7 +308,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-black pb-32 flex flex-col font-sans selection:bg-[#FFDE4D] selection:text-black">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] pb-32 flex flex-col font-sans selection:bg-[var(--accent-primary)] selection:text-[#000000]">
       {/* GLOBAL SYSTEM BAR */}
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -293,9 +332,9 @@ export default function App() {
       <FloatingHub />
 
       {/* FOOTER RAILS */}
-      <footer className="w-full text-center mt-12 py-6 border-t-4 border-black bg-white">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[10px] text-gray-500">
-          <span className="uppercase font-bold tracking-widest text-black">
+      <footer className="w-full text-center mt-12 py-6 border-t-4 border-[var(--border-color)] bg-[var(--bg-surface)]">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[10px] text-[var(--text-muted)]">
+          <span className="uppercase font-bold tracking-widest text-[var(--text-primary)]">
             COMMON CENTS
           </span>
           <span className="uppercase">
@@ -304,29 +343,41 @@ export default function App() {
         </div>
       </footer>
 
+      {/* GOOGLE ONBOARDING MODAL */}
+      {showGoogleOnboarding && auth.profile && auth.userId && (
+        <GoogleOnboardingModal
+          userId={auth.userId}
+          prefillName={auth.profile.display_name}
+          onComplete={() => {
+            setShowGoogleOnboarding(false);
+            auth.refreshProfile();
+          }}
+        />
+      )}
+
       {/* DAILY REMINDER IN-APP DIALOG */}
       <AnimatePresence>
         {isReminderModalOpen && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
+          <div className="fixed inset-0 bg-[var(--bg-badge)]/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', duration: 0.4 }}
-              className="max-w-md w-full bg-[#FAF6F0] border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative"
+              className="max-w-md w-full bg-[var(--bg-page)] border-4 border-[var(--border-color)] p-6 shadow-[8px_8px_0px_0px_var(--shadow-color)] relative"
             >
               {/* STYLISH CORNER BOXES FOR NEUBRUTALISM */}
-              <div className="absolute top-[-10px] left-4 bg-black text-white px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest border border-black">
+              <div className="absolute top-[-10px] left-4 bg-[var(--bg-badge)] text-[var(--text-badge)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest border border-[var(--border-color)]">
                 SYSTEM PROMPT
               </div>
               
               <div className="flex items-start gap-4 mt-2">
-                <div className="bg-[#FF6B6B] border-3 border-black p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
+                <div className="bg-[var(--accent-primary)] border-3 border-[var(--border-color)] p-3 shadow-[2px_2px_0px_0px_var(--shadow-color)] flex-shrink-0">
                   <span className="text-2xl">⏰</span>
                 </div>
                 <div>
                   <h3 className="text-xl font-bold tracking-tight uppercase">COMMON CENTS</h3>
-                  <p className="text-gray-700 font-medium mt-2 text-sm leading-relaxed">
+                  <p className="text-[var(--text-primary)] font-medium mt-2 text-sm leading-relaxed">
                     Did you record today's transactions?
                   </p>
                 </div>
@@ -335,7 +386,7 @@ export default function App() {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => setIsReminderModalOpen(false)}
-                  className="px-4 py-2 border-3 border-black bg-white font-mono text-xs uppercase font-bold hover:bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                  className="px-4 py-2 border-3 border-[var(--border-color)] bg-[var(--bg-surface)] font-mono text-xs uppercase font-bold hover:bg-[var(--bg-hover)] shadow-[2px_2px_0px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                 >
                   Dismiss
                 </button>
@@ -344,7 +395,7 @@ export default function App() {
                     setIsReminderModalOpen(false);
                     window.dispatchEvent(new CustomEvent('open-add-transaction'));
                   }}
-                  className="px-4 py-2 border-3 border-black bg-[#FFDE4D] font-mono text-xs uppercase font-bold hover:bg-[#ffe570] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                  className="px-4 py-2 border-3 border-[var(--border-color)] bg-[var(--accent-primary)] font-mono text-xs uppercase font-bold shadow-[3px_3px_0px_0px_var(--shadow-color)] hover:shadow-[4px_4px_0px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                 >
                   Add Transaction
                 </button>

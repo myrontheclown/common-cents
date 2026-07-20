@@ -49,7 +49,7 @@ export default function Insights() {
   })).sort((a, b) => b.Value - a.Value);
 
   // Colors for neubrutalist chart bars
-  const barColors = ['#FFDE4D', '#FF78C4', '#9DF1DF', '#FF9F9F', '#38BDF8', '#4ADE80', '#A5F3FC'];
+  const barColors = ['#D4A72C', '#DC5C5C', '#22C55E', '#F59E0B', '#4F8CC9', '#8B5CF6', '#3B82F6'];
 
   // Cool terminal logs sequence for loading
   const logSequence = [
@@ -107,26 +107,26 @@ export default function Insights() {
     switch (type) {
       case 'tip': 
         return {
-          bg: 'bg-[#9DF1DF]',
-          icon: <TrendingUp className="w-5 h-5 text-black" />,
+          accent: 'border-t-[var(--accent-success)]',
+          icon: <TrendingUp className="w-5 h-5 text-[var(--accent-success)]" />,
           label: 'ARBITRAGE ADVANTAGE'
         };
       case 'warning': 
         return {
-          bg: 'bg-[#FF9F9F]',
-          icon: <AlertTriangle className="w-5 h-5 text-black" />,
+          accent: 'border-t-[var(--accent-danger)]',
+          icon: <AlertTriangle className="w-5 h-5 text-[var(--accent-danger)]" />,
           label: 'VELOCITY WARNING'
         };
       case 'celebration': 
         return {
-          bg: 'bg-[#FFE17D]',
-          icon: <CheckCircle className="w-5 h-5 text-black animate-bounce" />,
+          accent: 'border-t-[var(--accent-warning)]',
+          icon: <CheckCircle className="w-5 h-5 text-[var(--accent-warning)] animate-bounce" />,
           label: 'MILESTONE UNLOCKED'
         };
       default: 
         return {
-          bg: 'bg-[#A5F3FC]',
-          icon: <Cpu className="w-5 h-5 text-black" />,
+          accent: 'border-t-[var(--accent-info)]',
+          icon: <Cpu className="w-5 h-5 text-[var(--accent-info)]" />,
           label: 'SYSTEM ANALYSIS'
         };
     }
@@ -136,10 +136,10 @@ export default function Insights() {
     <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       {/* HEADER ROW */}
-      <div className="lg:col-span-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b-4 border-black pb-4">
+      <div className="lg:col-span-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b-4 border-[var(--border-color)] pb-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-black uppercase">NEURAL INSIGHTS DRIVER</h2>
-          <p className="font-mono text-xs text-gray-500">
+          <h2 className="font-display text-2xl font-bold text-[var(--text-primary)] uppercase">NEURAL INSIGHTS DRIVER</h2>
+          <p className="font-mono text-xs text-[var(--text-muted)]">
             Cybernetic financial analytics driven by Google Gemini LLM reasoning
           </p>
         </div>
@@ -147,7 +147,7 @@ export default function Insights() {
         <button
           onClick={fetchInsights}
           disabled={loading}
-          className={`flex items-center gap-1.5 bg-[#FFDE4D] text-black font-display text-xs font-bold px-4 py-2 border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all ${
+          className={`flex items-center gap-1.5 bg-[var(--accent-primary)] text-[#000000] font-display text-xs font-bold px-4 py-2 border-2 border-[var(--border-color)] shadow-[2px_2px_0px_var(--shadow-color)] transition-all ${
             loading 
               ? 'opacity-50 cursor-not-allowed' 
               : 'hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none active:translate-x-[2px] active:translate-y-[2px]'
@@ -164,7 +164,7 @@ export default function Insights() {
         
         {/* LOADING SHIELD */}
         {loading && (
-          <div className="bg-black text-[#39FF14] font-mono p-8 border-4 border-[#39FF14] shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col gap-4 animate-pulse">
+          <div className="bg-black text-[#39FF14] font-mono p-8 border-4 border-[#39FF14] shadow-[6px_6px_0px_var(--shadow-color)] flex flex-col gap-4 animate-pulse">
             <div className="flex items-center gap-2 text-white">
               <Cpu className="w-6 h-6 animate-spin text-[#39FF14]" />
               <span className="font-display font-bold tracking-widest text-[#39FF14]">COMMON CENTS AGENT INFERENCE</span>
@@ -179,14 +179,14 @@ export default function Insights() {
 
         {/* ERROR SHIELD */}
         {error && (
-          <div className="bg-[#FF9F9F] border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)] flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-black shrink-0 mt-0.5" />
+          <div className="bg-[var(--card-bg)] border-4 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-danger)] p-5 shadow-[4px_4px_0px_var(--shadow-color)] flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-[var(--text-primary)] shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-display font-bold text-black uppercase text-sm">INFERENCE RUNTIME FAILURE</h4>
-              <p className="font-mono text-xs text-black mt-1">{error}</p>
+              <h4 className="font-display font-bold text-[var(--text-primary)] uppercase text-sm">INFERENCE RUNTIME FAILURE</h4>
+              <p className="font-mono text-xs text-[var(--text-primary)] mt-1">{error}</p>
               <button 
                 onClick={fetchInsights}
-                className="mt-3 bg-white border-2 border-black px-3 py-1 text-xs font-mono font-bold hover:bg-gray-50 shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-y-[1px]"
+                className="mt-3 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] px-3 py-1 text-xs font-mono font-bold hover:bg-[var(--bg-hover)] shadow-[2px_2px_0px_var(--shadow-color)] active:translate-y-[1px]"
                 style={{ cursor: 'pointer' }}
               >
                 RE-TRANSMIT QUERY
@@ -203,45 +203,45 @@ export default function Insights() {
               return (
                 <div 
                   key={insight.id}
-                  className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_rgba(0,0,0,1)] flex flex-col md:flex-row gap-5 items-start"
+                  className={`bg-[var(--card-bg)] border-4 border-[var(--border-color)] border-t-[3px] p-6 shadow-[6px_6px_0px_var(--shadow-color)] flex flex-col md:flex-row gap-5 items-start transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[7px_7px_0px_var(--shadow-color)] ${style.accent}`}
                 >
                   {/* ICON BLOCK */}
-                  <div className={`p-3 border-2 border-black rounded-none shrink-0 ${style.bg}`}>
+                  <div className={`p-3 border-2 border-[var(--border-color)] rounded-none shrink-0 bg-[var(--card-bg)]`}>
                     {style.icon}
                   </div>
 
                   {/* DETAILS */}
                   <div className="flex-grow">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                      <span className="font-mono text-[9px] bg-black text-white px-1.5 py-0.5 font-bold tracking-wider">
+                      <span className="font-mono text-[9px] bg-[var(--bg-badge)] text-[var(--text-badge)] px-1.5 py-0.5 font-bold tracking-wider">
                         {style.label}
                       </span>
-                      <span className="font-mono text-[10px] text-gray-500 font-bold">{insight.date}</span>
+                      <span className="font-mono text-[10px] text-[var(--text-muted)] font-bold">{insight.date}</span>
                     </div>
 
-                    <h3 className="font-display text-lg font-bold text-black leading-tight mb-1">
+                    <h3 className="font-display text-lg font-bold text-[var(--text-primary)] leading-tight mb-1">
                       {insight.title}
                     </h3>
                     
-                    <p className="font-display text-sm font-bold text-gray-700 italic mb-3">
+                    <p className="font-display text-sm font-bold text-[var(--text-primary)] italic mb-3">
                       {insight.summary}
                     </p>
 
-                    <p className="font-mono text-xs text-gray-600 leading-relaxed bg-gray-50 p-3 border border-black border-dashed mb-4">
+                    <p className="font-mono text-xs text-[var(--text-muted)] leading-relaxed bg-[var(--bg-muted)] p-3 border border-[var(--border-color)] border-dashed mb-4">
                       {insight.detail}
                     </p>
 
                     {/* ACTION & IMPACT PANEL */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-black/10 pt-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[var(--border-color)]/10 pt-3">
                       <div className="flex items-center gap-2">
-                        <Terminal className="w-3.5 h-3.5 text-black shrink-0" />
-                        <span className="font-mono text-[10px] font-bold text-black uppercase">
-                          Action: <span className="text-gray-600 font-normal">{insight.actionableStep}</span>
+                        <Terminal className="w-3.5 h-3.5 text-[var(--text-primary)] shrink-0" />
+                        <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase">
+                          Action: <span className="text-[var(--text-muted)] font-normal">{insight.actionableStep}</span>
                         </span>
                       </div>
                       
                       {insight.impactValue && (
-                        <div className="bg-[#4ADE80] border-2 border-black px-2.5 py-0.5 font-mono text-xs font-bold text-black inline-flex items-center gap-1 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                        <div className="bg-[var(--accent-success)] border-2 border-[var(--border-color)] px-2.5 py-0.5 font-mono text-xs font-bold text-[#000000] inline-flex items-center gap-1 shadow-[2px_2px_0px_var(--shadow-color)]">
                           <Zap className="w-3.5 h-3.5" />
                           {insight.impactValue}
                         </div>
@@ -260,8 +260,8 @@ export default function Insights() {
       <div className="lg:col-span-4 flex flex-col gap-6">
         
         {/* OUTFLOW DISTRIBUTION BAR CHART */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h3 className="font-display text-base font-bold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider">
+        <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h3 className="font-display text-base font-bold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider">
             OUTFLOW DISTRIBUTION
           </h3>
 
@@ -289,15 +289,15 @@ export default function Insights() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="p-8 text-center text-xs font-mono font-bold text-gray-500 uppercase border border-black border-dashed">
+            <div className="p-8 text-center text-xs font-mono font-bold text-[var(--text-muted)] uppercase border border-[var(--border-color)] border-dashed">
               No outflow transactions recorded
             </div>
           )}
         </div>
 
         {/* SUBSCRIPTION DEBIT AUDITOR */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h3 className="font-display text-base font-bold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h3 className="font-display text-base font-bold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
             <span>💳</span> SUBSCRIPTION DEBIT AUDITOR
           </h3>
           
@@ -319,20 +319,20 @@ export default function Insights() {
 
             return (
               <div className="space-y-4">
-                <div className="bg-[#C084FC]/10 border-2 border-black p-3.5 font-mono shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)]">
-                  <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-wider mb-1">
+                <div className="bg-[var(--accent-purple)]/10 border-2 border-[var(--border-color)] p-3.5 font-mono shadow-[2.5px_2.5px_0px_var(--shadow-color)]">
+                  <span className="text-[10px] text-[var(--text-muted)] font-bold block uppercase tracking-wider mb-1">
                     YEARLY RECURRING OUTFLOW
                   </span>
-                  <span className="text-2xl font-black text-black">
+                  <span className="text-2xl font-black text-[var(--text-primary)]">
                     ₹{yearlySpend.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[9px] text-gray-400 block uppercase mt-1">
+                  <span className="text-[9px] text-[var(--text-muted)] block uppercase mt-1">
                     Equivalent to ₹{(yearlySpend / 12).toLocaleString('en-IN', { maximumFractionDigits: 0 })} per month drag
                   </span>
                 </div>
 
                 <div className="font-mono text-xs">
-                  <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-wider mb-2">
+                  <span className="text-[10px] text-[var(--text-muted)] font-bold block uppercase tracking-wider mb-2">
                     INTELLIGENCE ANOMALY DETECTION
                   </span>
                   {expensiveSubs.length > 0 ? (
@@ -341,14 +341,14 @@ export default function Insights() {
                         const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
                         const monthlyEquiv = (cycle === 'yearly') ? (s.amount / 12) : s.amount;
                         return (
-                          <div key={s.id} className="border border-black bg-[#FFE2E2] p-2.5 shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)]">
+                          <div key={s.id} className="border border-[var(--border-color)] bg-[#FFE2E2] p-2.5 shadow-[1.5px_1.5px_0px_var(--shadow-color)]">
                             <div className="flex items-center justify-between font-bold mb-1">
-                              <span className="text-black uppercase text-[10px]">{s.service_name || s.name}</span>
+                              <span className="text-[var(--text-primary)] uppercase text-[10px]">{s.service_name || s.name}</span>
                               <span className="text-red-600 text-[10px]">
                                 ₹{s.amount.toLocaleString('en-IN')}/{cycle === 'yearly' ? 'yr' : 'mo'}
                               </span>
                             </div>
-                            <p className="text-[9px] text-gray-700 leading-relaxed">
+                            <p className="text-[9px] text-[var(--text-primary)] leading-relaxed">
                               ⚠️ EXPENSIVE RECURRING DEBIT: Costs ₹{monthlyEquiv.toLocaleString('en-IN', { maximumFractionDigits: 0 })}/mo equivalent. Consider downgrading or auditing usage metrics.
                             </p>
                           </div>
@@ -356,7 +356,7 @@ export default function Insights() {
                       })}
                     </div>
                   ) : (
-                    <div className="border border-black border-dashed bg-gray-50 p-3 text-center text-gray-400 text-[9px] uppercase italic">
+                    <div className="border border-[var(--border-color)] border-dashed bg-[var(--bg-muted)] p-3 text-center text-[var(--text-muted)] text-[9px] uppercase italic">
                       Zero high-cost subscriptions (&gt;₹500/mo) detected. Capital efficiency is high.
                     </div>
                   )}
@@ -367,8 +367,8 @@ export default function Insights() {
         </div>
 
         {/* PAYMENT METHOD VELOCITY */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h3 className="font-display text-base font-bold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h3 className="font-display text-base font-bold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
             <span>⚡</span> PAYMENT METHOD VELOCITY
           </h3>
           {(() => {
@@ -390,55 +390,55 @@ export default function Insights() {
             return (
               <div className="space-y-4">
                 {mostUsed && mostUsed.count > 0 ? (
-                  <div className="bg-[#A5F3FC]/20 border-2 border-black p-3 font-mono shadow-[2.5px_2.5px_0px_rgba(0,0,0,1)]">
-                    <span className="text-[9px] text-gray-500 font-bold block uppercase tracking-wider mb-1">
+                  <div className="bg-[var(--accent-info)]/20 border-2 border-[var(--border-color)] p-3 font-mono shadow-[2.5px_2.5px_0px_var(--shadow-color)]">
+                    <span className="text-[9px] text-[var(--text-muted)] font-bold block uppercase tracking-wider mb-1">
                       MOST ENGAGED METHOD
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-black">
+                      <span className="text-sm font-black text-[var(--text-primary)]">
                         {mostUsed.name}
                       </span>
-                      <span className="bg-black text-white text-[8px] font-mono font-bold px-1.5 py-0.2 uppercase">
+                      <span className="bg-[var(--bg-badge)] text-[var(--text-badge)] text-[8px] font-mono font-bold px-1.5 py-0.2 uppercase">
                         {mostUsed.type}
                       </span>
                     </div>
-                    <span className="text-[10px] text-gray-600 block mt-1">
-                      Accessed <span className="font-bold text-black">{mostUsed.count} times</span> | Spent <span className="font-bold text-black">₹{mostUsed.spend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] block mt-1">
+                      Accessed <span className="font-bold text-[var(--text-primary)]">{mostUsed.count} times</span> | Spent <span className="font-bold text-[var(--text-primary)]">₹{mostUsed.spend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                     </span>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 border border-black border-dashed p-3 text-center text-gray-400 text-[9px] uppercase italic">
+                  <div className="bg-[var(--bg-muted)] border border-[var(--border-color)] border-dashed p-3 text-center text-[var(--text-muted)] text-[9px] uppercase italic">
                     No payment method engagement tracked yet
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-wider">
+                  <span className="text-[10px] text-[var(--text-muted)] font-bold block uppercase tracking-wider">
                     PAYMENT CHANNEL ENGAGEMENT
                   </span>
                   <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
                     {methodStats.map(pm => {
                       const vault = accounts.find(a => a.id === pm.accountId)?.name || 'Direct';
                       return (
-                        <div key={pm.id} className="border border-black bg-white p-2 flex items-center justify-between hover:bg-gray-50">
+                        <div key={pm.id} className="border border-[var(--border-color)] bg-[var(--bg-surface)] p-2 flex items-center justify-between hover:bg-[var(--bg-hover)]">
                           <div>
                             <div className="flex items-center gap-1.5">
                               {getPaymentMethodIcon(pm.icon)}
                               <span 
-                                className="inline-block w-2 h-2 border border-black rounded-none"
+                                className="inline-block w-2 h-2 border border-[var(--border-color)] rounded-none"
                                 style={{ backgroundColor: pm.color || '#000' }}
                               />
-                              <span className="text-black uppercase text-[10px] font-bold">{pm.name}</span>
+                              <span className="text-[var(--text-primary)] uppercase text-[10px] font-bold">{pm.name}</span>
                             </div>
-                            <span className="text-[8px] text-gray-500 font-mono font-bold block mt-0.5 uppercase">
+                            <span className="text-[8px] text-[var(--text-muted)] font-mono font-bold block mt-0.5 uppercase">
                               Type: {pm.type} | Linked: {vault}
                             </span>
                           </div>
                           <div className="text-right font-mono">
-                            <span className="text-black text-[10px] font-bold block">
+                            <span className="text-[var(--text-primary)] text-[10px] font-bold block">
                               {pm.count} txs
                             </span>
-                            <span className="text-gray-500 text-[8px] block mt-0.5">
+                            <span className="text-[var(--text-muted)] text-[8px] block mt-0.5">
                               ₹{pm.spend.toLocaleString('en-IN', { maximumFractionDigits: 0 })} spent
                             </span>
                           </div>
@@ -453,22 +453,22 @@ export default function Insights() {
         </div>
 
         {/* NEURAL STATS BLOCK */}
-        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-          <h3 className="font-display text-base font-bold text-black border-b-2 border-black pb-2 mb-4 uppercase tracking-wider">
+        <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+          <h3 className="font-display text-base font-bold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider">
             SHELL CAPABILITIES
           </h3>
-          <div className="flex flex-col gap-2.5 font-mono text-[11px] text-gray-700">
-            <div className="flex items-center justify-between border-b border-black/5 pb-1.5">
+          <div className="flex flex-col gap-2.5 font-mono text-[11px] text-[var(--text-primary)]">
+            <div className="flex items-center justify-between border-b border-[var(--border-color)]/5 pb-1.5">
               <span>MODEL IDENTIFIER:</span>
-              <span className="font-bold text-black">gemini-3.5-flash</span>
+              <span className="font-bold text-[var(--text-primary)]">gemini-3.5-flash</span>
             </div>
-            <div className="flex items-center justify-between border-b border-black/5 pb-1.5">
+            <div className="flex items-center justify-between border-b border-[var(--border-color)]/5 pb-1.5">
               <span>LATENCY TOLERANCE:</span>
-              <span className="font-bold text-black">DYNAMIC (HMR OFF)</span>
+              <span className="font-bold text-[var(--text-primary)]">DYNAMIC (HMR OFF)</span>
             </div>
-            <div className="flex items-center justify-between border-b border-black/5 pb-1.5">
+            <div className="flex items-center justify-between border-b border-[var(--border-color)]/5 pb-1.5">
               <span>INTELLIGENCE MODE:</span>
-              <span className="font-bold text-black">SCHEMA VALIDATED JSON</span>
+              <span className="font-bold text-[var(--text-primary)]">SCHEMA VALIDATED JSON</span>
             </div>
             <div className="flex items-center justify-between">
               <span>OAUTH HOOKS:</span>

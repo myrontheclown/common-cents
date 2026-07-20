@@ -7,8 +7,103 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+:root {
+  --bg-page: #FAF6F0;
+  --bg-surface: #FFFFFF;
+  --bg-muted: #f9fafb;
+  --bg-hover: #f0f0f0;
+  --bg-input-focus: #FFFDEB;
+  --bg-badge: #000000;
+  --bg-surface-alt: #f9fafb;
+
+  --text-primary: #000000;
+  --text-muted: #6b7280;
+  --text-badge: #FFFFFF;
+
+  --border-color: #000000;
+  --shadow-color: rgba(0,0,0,1);
+
+  --card-bg: #FFFFFF;
+  --card-hover: #f0f0f0;
+
+  --accent-primary: #D4A72C;
+  --accent-purple: #8B5CF6;
+  --accent-success: #22C55E;
+  --accent-warning: #F59E0B;
+  --accent-danger: #DC5C5C;
+  --accent-info: #4F8CC9;
+
+  --section-money: #F4EBD8;
+  --section-analytics: #DFF7E5;
+  --section-ai: #D8EEF8;
+  --section-goals: #EFE2FF;
+  --section-journal: #FFF3C8;
+  --section-settings: #E7F0FF;
+  --section-wrapped: #FCE4EC;
+  --section-subscriptions: #F8ECD6;
+
+  --card-net-worth: #E8DEFF;
+  --card-income: #D8F3D0;
+  --card-expenses: #F8D6D6;
+  --card-savings: #D8E9FA;
+  --card-streak: #FFE2B8;
+  --card-safe-to-spend: #DDF5CF;
+  --card-cash-flow: #F7E7C4;
+}
+
+[data-theme="dark"] {
+  --bg-page: #18171F;
+  --bg-surface: #232942;
+  --bg-muted: #2A3150;
+  --bg-hover: #3B4570;
+  --bg-input-focus: #3B4570;
+  --bg-badge: #F3F4F8;
+  --bg-surface-alt: #2A3150;
+
+  --text-primary: #F3F4F8;
+  --text-muted: #8D92A8;
+  --text-badge: #18171F;
+
+  --border-color: #4D5678;
+  --shadow-color: rgba(77, 86, 120, 0.45);
+
+  --card-bg: #2B2B3C;
+  --card-hover: #34364A;
+
+  --accent-primary: #D4A72C;
+  --accent-purple: #8B5CF6;
+  --accent-success: #22C55E;
+  --accent-warning: #F59E0B;
+  --accent-danger: #DC5C5C;
+  --accent-info: #4F8CC9;
+
+  --section-money: #2B2A28;
+  --section-analytics: #242B26;
+  --section-ai: #24272C;
+  --section-goals: #26242C;
+  --section-journal: #2C2A26;
+  --section-settings: #24262C;
+  --section-wrapped: #2C2428;
+  --section-subscriptions: #2C2824;
+
+  --card-net-worth: #2D2640;
+  --card-income: #223A28;
+  --card-expenses: #3D2424;
+  --card-savings: #223044;
+  --card-streak: #3D301E;
+  --card-safe-to-spend: #223D28;
+  --card-cash-flow: #3D3522;
+}
+
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+html * {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 @layer base {
   body {
-    @apply font-sans bg-[#FAF6F0] text-black antialiased overflow-x-hidden;
+    @apply font-sans bg-[var(--bg-page)] text-[var(--text-primary)] antialiased overflow-x-hidden;
   }
 }

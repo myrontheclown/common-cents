@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS users (
 
     monthly_savings_goal NUMERIC(12,2) DEFAULT 0,
 
+    age INTEGER,
+
+    onboarding_completed BOOLEAN DEFAULT TRUE,
+
     category_threshold INTEGER DEFAULT 80,
 
     reminder_enabled BOOLEAN DEFAULT TRUE,

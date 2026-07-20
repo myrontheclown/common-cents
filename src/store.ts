@@ -239,10 +239,11 @@ export const useFinanceStore = create<FinanceState>()(
       insights: [],
       preferences: {
         name: '',
+        age: null,
         currency: 'INR',
         monthlySavingsGoal: 50000,
         categoryThreshold: 80,
-        theme: 'neubrutalist',
+        theme: 'system',
         reminderEnabled: true,
         reminderTime: '21:30',
         currentStreak: 0,
@@ -851,37 +852,39 @@ export const useFinanceStore = create<FinanceState>()(
         }
       },
       
-      resetAllData: () => set({
-        accounts: [],
-        transactions: [],
-        budgets: [],
-        subscriptions: [],
-        goals: [],
-        achievements: [],
-        insights: [],
-        paymentMethods: [],
-        preferences: {
-          name: '',
-          currency: 'INR',
-          monthlySavingsGoal: 50000,
-          categoryThreshold: 80,
-          theme: 'neubrutalist',
-          reminderEnabled: true,
-          reminderTime: '21:30',
-          currentStreak: 0,
-          longestStreak: 0,
-          lastLoggedDate: ''
-        },
-        isVaultsHydrated: false,
-        isTransactionsHydrated: false,
-        isPaymentMethodsHydrated: false,
-        isGoalsHydrated: false,
-        isSubscriptionsHydrated: false,
-        isBudgetsHydrated: false,
-        isAchievementsHydrated: false,
-      }),
+resetAllData: () =>
+  set((state) => ({
+    accounts: [],
+    transactions: [],
+    budgets: [],
+    subscriptions: [],
+    goals: [],
+    achievements: [],
+    insights: [],
+    paymentMethods: [],
 
-      recalculateStreak: () => {
+    preferences: {
+      // Preserve app/UI preferences
+      ...state.preferences,
+
+      // Reset user-specific profile data
+      name: '',
+      age: null,
+      monthlySavingsGoal: 50000,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastLoggedDate: '',
+    },
+
+    isVaultsHydrated: false,
+    isTransactionsHydrated: false,
+    isPaymentMethodsHydrated: false,
+    isGoalsHydrated: false,
+    isSubscriptionsHydrated: false,
+    isBudgetsHydrated: false,
+    isAchievementsHydrated: false,
+  })),
+        recalculateStreak: () => {
         updateStreakAndAchievementsInternal(set, get, get().transactions);
       }
     }),

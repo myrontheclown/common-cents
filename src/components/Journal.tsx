@@ -109,7 +109,7 @@ export default function Journal() {
   const isValidCustom = customStart && customEnd && customEnd >= customStart;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-[var(--section-analytics)]">
       <JournalHeader />
 
       <TimelineSelector
@@ -120,7 +120,7 @@ export default function Journal() {
       {/* PERIOD LABEL */}
       {activePeriod !== 'custom' && summary && (
         <div className="lg:col-span-12">
-          <p className="font-mono text-[11px] text-gray-500 font-bold">
+          <p className="font-mono text-[11px] text-[var(--text-muted)] font-bold">
             <Calendar className="w-3.5 h-3.5 inline mr-1" />
             {periodLabel} &middot; {summary.transactionCount} transactions
           </p>
@@ -190,11 +190,11 @@ export default function Journal() {
         </>
       ) : activePeriod === 'custom' ? (
         <div className="lg:col-span-12">
-          <div className="bg-white border-4 border-black p-10 text-center shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+          <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-10 text-center shadow-[4px_4px_0px_var(--shadow-color)]">
             <div className="flex flex-col items-center gap-3">
               <span className="text-4xl">📖</span>
-              <p className="font-display text-lg font-bold text-black">No financial activity found for this period.</p>
-              <p className="font-mono text-xs text-gray-500">Start logging transactions to build your financial journal.</p>
+              <p className="font-display text-lg font-bold text-[var(--text-primary)]">No financial activity found for this period.</p>
+              <p className="font-mono text-xs text-[var(--text-muted)]">Start logging transactions to build your financial journal.</p>
             </div>
           </div>
         </div>
@@ -208,7 +208,7 @@ export default function Journal() {
               <button
                 key={item}
                 onClick={() => setActivePeriod(item)}
-                className="font-mono text-[9px] font-bold bg-white border-2 border-black px-3 py-1.5 shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none hover:bg-gray-50 transition-all"
+                className="font-mono text-[9px] font-bold bg-[var(--bg-surface)] border-2 border-[var(--border-color)] px-3 py-1.5 shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none hover:bg-[var(--bg-hover)] transition-all"
                 style={{ cursor: 'pointer' }}
               >
                 {item === 'today' ? '⭐' : item === 'week' ? '📅' : item === 'month' ? '📆' : '📈'} Jump to {item === 'today' ? 'Today' : item === 'week' ? 'This Week' : item === 'month' ? 'This Month' : 'This Year'}
