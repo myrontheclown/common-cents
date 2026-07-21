@@ -10,6 +10,7 @@ export interface VaultRow {
   display_name: string;
   type: AccountType;
   balance: number;
+  minimum_balance: number | null;
   icon: string | null;
   color: string | null;
   active: boolean;
@@ -26,6 +27,7 @@ export interface VaultInsert {
   display_name: string;
   type: AccountType;
   balance: number;
+  minimum_balance?: number | null;
   icon?: string | null;
   color?: string | null;
 }
@@ -38,6 +40,7 @@ export interface VaultUpdate {
   display_name?: string;
   type?: AccountType;
   balance?: number;
+  minimum_balance?: number | null;
   icon?: string | null;
   color?: string | null;
   active?: boolean;
@@ -52,6 +55,7 @@ export function vaultRowToAccount(row: VaultRow): Account {
     balance: row.balance,
     color: row.color ?? '#38BDF8',
     icon: row.icon ?? 'Landmark',
+    minimumBalance: row.minimum_balance ?? undefined,
   };
 }
 
@@ -63,6 +67,7 @@ export function accountToVaultInsert(
     display_name: account.name,
     type: account.type,
     balance: account.balance,
+    minimum_balance: account.minimumBalance ?? null,
     color: account.color,
     icon: account.icon,
   };
@@ -73,6 +78,7 @@ export function accountToVaultUpdate(account: Account): VaultUpdate {
   return {
     display_name: account.name,
     type: account.type,
+    minimum_balance: account.minimumBalance ?? null,
     color: account.color,
     icon: account.icon,
   };

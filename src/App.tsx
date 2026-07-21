@@ -14,7 +14,7 @@ import FloatingHub from './components/FloatingHub';
 import { useFinanceStore } from './store';
 import type { ThemeMode } from './types';
 import { useAuthContext } from './providers/AuthProvider';
-import GoogleOnboardingModal from './components/GoogleOnboardingModal';
+import OnboardingModal from './components/OnboardingModal';
 import { VaultRepository } from './lib/db/repositories';
 import { TransactionRepository } from './lib/db/repositories/TransactionRepository';
 import { PaymentMethodRepository } from './lib/db/repositories/PaymentMethodRepository';
@@ -46,7 +46,7 @@ export default function App() {
   const { preferences, transactions, recalculateStreak, resetAllData, updatePreferences, setAccounts, setVaultsHydrated, setTransactions, setTransactionsHydrated, setPaymentMethods, setPaymentMethodsHydrated, setGoals, setGoalsHydrated, setSubscriptions, setSubscriptionsHydrated, setBudgets, setBudgetsHydrated, setAchievements, setAchievementsHydrated } = useFinanceStore();
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [lastNotificationDate, setLastNotificationDate] = useState<string>('');
-  const [showGoogleOnboarding, setShowGoogleOnboarding] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const prevUserIdRef = useRef<string | null>(null);
 
@@ -78,12 +78,12 @@ export default function App() {
     recalculateStreak();
   }, [recalculateStreak]);
 
-  // Google onboarding modal
+  // Onboarding modal (for both Email and Google signups)
   useEffect(() => {
     if (auth.profile && auth.profile.onboarding_completed === false) {
-      setShowGoogleOnboarding(true);
+      setShowOnboarding(true);
     } else {
-      setShowGoogleOnboarding(false);
+      setShowOnboarding(false);
     }
   }, [auth.profile]);
 
@@ -343,13 +343,13 @@ export default function App() {
         </div>
       </footer>
 
-      {/* GOOGLE ONBOARDING MODAL */}
-      {showGoogleOnboarding && auth.profile && auth.userId && (
-        <GoogleOnboardingModal
+      {/* ONBOARDING MODAL (Email & Google) */}
+      {showOnboarding && auth.profile && auth.userId && (
+        <OnboardingModal
           userId={auth.userId}
           prefillName={auth.profile.display_name}
           onComplete={() => {
-            setShowGoogleOnboarding(false);
+            setShowOnboarding(false);
             auth.refreshProfile();
           }}
         />

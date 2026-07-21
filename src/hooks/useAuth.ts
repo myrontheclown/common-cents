@@ -53,7 +53,6 @@ export function useAuth(): AuthState {
       } else {
         const pending = pendingOnboardingRef.current;
         const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User';
-        const isGoogle = user.app_metadata?.provider === 'google';
         const newProfile = {
           id: user.id,
           display_name: pending?.displayName || displayName,
@@ -61,7 +60,7 @@ export function useAuth(): AuthState {
           age: pending?.age ?? null,
           currency: pending?.currency || 'INR',
           monthly_savings_goal: pending?.monthlySavingsGoal ?? 0,
-          onboarding_completed: !isGoogle,
+          onboarding_completed: false,
         };
         await createProfile(newProfile);
         const created: UserProfile = {

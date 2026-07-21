@@ -81,6 +81,10 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     currentBalance: number;
   } | null>(null);
 
+  const lowBalanceVaults = accounts.filter(
+    a => a.minimumBalance != null && a.minimumBalance > 0 && a.balance < a.minimumBalance
+  );
+
   const getVaultEmoji = (type: string) => {
     switch (type) {
       case 'bank': return '🏦';
@@ -763,6 +767,52 @@ console.table(
           </div>
         </div>
 
+        {/* LOW BALANCE WARNING CARD */}
+        {lowBalanceVaults.length > 0 && (
+          <div className="bg-red-50 border-4 border-red-600 p-5 shadow-[4px_4px_0px_rgba(220,38,38,0.3)]">
+            <div className="flex items-center gap-2 border-b-2 border-red-600 pb-2 mb-3">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              <h2 className="font-display text-base font-black text-red-600 uppercase tracking-wider">
+                VAULT BALANCE ALERT
+              </h2>
+            </div>
+            <div className="flex flex-col gap-2">
+              {lowBalanceVaults.map(v => (
+                <div key={v.id} className="border-2 border-red-500 bg-white p-3 shadow-[2px_2px_0px_rgba(220,38,38,0.2)]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{getVaultEmoji(v.type)}</span>
+                      <span className="font-display font-bold text-sm text-red-700 uppercase">{v.name}</span>
+                    </div>
+                    <span className="font-mono text-[10px] bg-red-100 border border-red-500 px-1.5 py-0.5 text-red-700 font-bold">
+                      LOW
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-xs">
+                    <div>
+                      <span className="text-[9px] text-gray-500 block uppercase font-bold">Current Balance</span>
+                      <span className="font-black text-red-600">{formatINR(v.balance)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-gray-500 block uppercase font-bold">Minimum Threshold</span>
+                      <span className="font-black text-red-600">{formatINR(v.minimumBalance!)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 w-full bg-gray-200 h-2 border border-red-500">
+                    <div
+                      className="bg-red-600 h-full"
+                      style={{ width: `${Math.min(100, (v.balance / v.minimumBalance) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="font-mono text-[9px] text-red-600 mt-1.5 font-bold">
+                    Balance is below the configured minimum. Consider adding funds.
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* SECTION 5: WHAT HAPPENS NEXT? */}
         <div className="bg-[var(--section-subscriptions)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
           <h2 className="font-display text-lg font-extrabold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -1126,12 +1176,17 @@ console.table(
                   const netWorth = Math.max(totalNetWorth, 1);
                   const netWorthPct = Math.max(0, Math.min(100, (acc.balance / netWorth) * 100));
                   const isNegative = acc.balance < 0;
+                  const isLowBalance = acc.minimumBalance != null && acc.minimumBalance > 0 && acc.balance < acc.minimumBalance;
 
                   return (
                     <div
                       key={acc.id}
-                      className={`border-2 border-[var(--border-color)] p-3.5 shadow-[3px_3px_0px_var(--shadow-color)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_var(--shadow-color)] ${
-                        isNegative ? 'bg-red-50' : 'bg-[var(--bg-surface)]'
+                      className={`border-2 p-3.5 shadow-[3px_3px_0px_var(--shadow-color)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_var(--shadow-color)] ${
+                        isLowBalance
+                          ? 'border-red-500 bg-red-50 shadow-[3px_3px_0px_rgba(220,38,38,0.3)]'
+                          : isNegative
+                            ? 'border-[var(--border-color)] bg-red-50'
+                            : 'border-[var(--border-color)] bg-[var(--bg-surface)]'
                       }`}
                     >
                       {/* Header Row: Icon + Name + Edit */}
@@ -1141,12 +1196,17 @@ console.table(
                           <span className="font-display font-bold text-xs text-[var(--text-primary)] uppercase truncate" title={acc.name}>
                             {acc.name}
                           </span>
-                          {isNegative && (
+                          {isLowBalance ? (
+                            <span className="flex items-center gap-0.5 bg-orange-200 border border-orange-600 px-1 py-0.5 font-mono text-[8px] font-bold text-orange-700 uppercase leading-none">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Low Balance
+                            </span>
+                          ) : isNegative ? (
                             <span className="flex items-center gap-0.5 bg-red-200 border border-red-600 px-1 py-0.5 font-mono text-[8px] font-bold text-red-700 uppercase leading-none">
                               <AlertTriangle className="w-2.5 h-2.5" />
                               Overdrawn
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         <button
                           onClick={() => {

@@ -77,6 +77,13 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // Google password creation
+  const [showGooglePassword, setShowGooglePassword] = useState(false);
+  const [googleNewPassword, setGoogleNewPassword] = useState('');
+  const [googleConfirmPassword, setGoogleConfirmPassword] = useState('');
+  const [googlePasswordError, setGooglePasswordError] = useState<string | null>(null);
+  const [googlePasswordLoading, setGooglePasswordLoading] = useState(false);
+
   // Settings form states
   const [name, setName] = useState(preferences.name);
   const [savingsGoal, setSavingsGoal] = useState(preferences.monthlySavingsGoal.toString());
@@ -89,6 +96,7 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<'bank' | 'cash' | 'investment' | 'credit' | 'asset' | 'liability'>('bank');
   const [newAccBalance, setNewAccBalance] = useState('');
+  const [newAccMinBalance, setNewAccMinBalance] = useState('');
   const [newAccColor, setNewAccColor] = useState('#4F8CC9');
   const [newAccIcon, setNewAccIcon] = useState('Landmark');
 
@@ -147,6 +155,7 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
         type: newAccType,
         color: newAccColor,
         icon: newAccIcon,
+        minimumBalance: newAccMinBalance ? Number(newAccMinBalance) : undefined,
       });
       triggerNotification(`VAULT "${newAccName.toUpperCase()}" UPDATED SUCCESSFULLY.`);
       resetAccountForm();
@@ -165,6 +174,7 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
         name: newAccName,
         type: newAccType,
         balance: parseFloat(parseFloat(newAccBalance).toFixed(2)),
+        minimumBalance: newAccMinBalance ? Number(newAccMinBalance) : undefined,
         color: newAccColor,
         icon: newAccIcon
       },
@@ -232,6 +242,7 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
     setEditingAccount(null);
     setNewAccName('');
     setNewAccBalance('');
+    setNewAccMinBalance('');
     setNewAccType('bank');
     setNewAccColor('#4F8CC9');
     setNewAccIcon('Landmark');
@@ -246,6 +257,7 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
     setNewAccColor(acc.color);
     setNewAccIcon(acc.icon);
     setNewAccBalance('');
+    setNewAccMinBalance(acc.minimumBalance?.toString() || '');
     onClearPendingVaultEdit();
     (document.getElementById('settings-shell') as HTMLElement)?.scrollIntoView({ behavior: 'smooth' });
   }, [pendingVaultEdit]);
@@ -481,6 +493,121 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
         </div>
       </div>
 
+      {/* SECURITY SECTION - Google users can set a password */}
+      {auth.user?.app_metadata?.provider === 'google' && (
+        <div className="lg:col-span-12">
+          <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-base font-bold text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-2 mb-3 uppercase tracking-wider flex items-center gap-2">
+                <Key className="w-4 h-4 text-[var(--text-primary)]" />
+                SECURITY
+              </h3>
+            </div>
+            <p className="font-mono text-[10px] text-[var(--text-muted)] mb-3">
+              Your account currently uses Google for authentication. Set a password to also sign in with email + password.
+            </p>
+            {!showGooglePassword ? (
+              <button
+                onClick={() => setShowGooglePassword(true)}
+                className="px-3 py-2 bg-[var(--accent-info)] border-2 border-[var(--border-color)] font-mono text-[10px] font-bold text-[#000000] shadow-[2px_2px_0px_var(--shadow-color)] hover:shadow-[3px_3px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-1.5"
+                style={{ cursor: 'pointer' }}
+              >
+                <Key className="w-3 h-3" />
+                CREATE PASSWORD FOR EMAIL LOGIN
+              </button>
+            ) : (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setGooglePasswordError(null);
+                if (googleNewPassword.length < 8) {
+                  setGooglePasswordError('Password must be at least 8 characters.');
+                  return;
+                }
+                if (googleNewPassword !== googleConfirmPassword) {
+                  setGooglePasswordError('Passwords do not match.');
+                  return;
+                }
+                setGooglePasswordLoading(true);
+                try {
+                  await updatePassword(googleNewPassword);
+                  setShowGooglePassword(false);
+                  setGoogleNewPassword('');
+                  setGoogleConfirmPassword('');
+                  triggerNotification('PASSWORD CREATED SUCCESSFULLY. YOU CAN NOW SIGN IN WITH EMAIL + PASSWORD.');
+                } catch (err: any) {
+                  setGooglePasswordError(err?.message || 'Failed to set password.');
+                } finally {
+                  setGooglePasswordLoading(false);
+                }
+              }} className="space-y-3">
+                <div>
+                  <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                    NEW PASSWORD
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={googleNewPassword}
+                    onChange={(e) => setGoogleNewPassword(e.target.value)}
+                    className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                    CONFIRM PASSWORD
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Re-enter password"
+                    value={googleConfirmPassword}
+                    onChange={(e) => setGoogleConfirmPassword(e.target.value)}
+                    className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
+                    required
+                  />
+                </div>
+                {googlePasswordError && (
+                  <div className="bg-[var(--accent-danger)] border-2 border-[var(--border-color)] p-2 font-mono text-[11px] font-bold text-[#000000]">
+                    [PASSWORD_ERROR]: {googlePasswordError}
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowGooglePassword(false);
+                      setGoogleNewPassword('');
+                      setGoogleConfirmPassword('');
+                      setGooglePasswordError(null);
+                    }}
+                    className="bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border-2 border-[var(--border-color)] py-2 px-4 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[2px_2px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none transition-all"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={googlePasswordLoading}
+                    className="bg-[var(--accent-primary)] border-2 border-[var(--border-color)] py-2 px-4 font-mono text-xs font-bold text-[#000000] shadow-[2px_2px_0px_var(--shadow-color)] hover:shadow-[3px_3px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    style={{ cursor: googlePasswordLoading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {googlePasswordLoading ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-[var(--border-color)] border-t-transparent rounded-full animate-spin" />
+                        SETTING...
+                      </>
+                    ) : (
+                      'SET PASSWORD'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* THEME SELECTOR */}
       <div className="lg:col-span-12">
         <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)]">
@@ -660,6 +787,22 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
                   />
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1">MINIMUM BALANCE (₹) <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span></label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="e.g. 5000"
+                value={newAccMinBalance}
+                onChange={(e) => setNewAccMinBalance(e.target.value)}
+                className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)]"
+              />
+              <span className="font-mono text-[9px] text-[var(--text-muted)] block mt-1">
+                Get alerted when vault balance drops below this threshold.
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1314,7 +1457,6 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
                     monthly_savings_goal: editSavingsGoal ? Number(editSavingsGoal) : 0,
                   });
                   updatePreferences({
-                    ...preferences,
                     name: editDisplayName.trim(),
                     age: editAge ? Number(editAge) : null,
                     currency: editCurrency,

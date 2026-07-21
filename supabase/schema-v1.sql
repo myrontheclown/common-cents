@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS vaults (
     DEFAULT 0
     NOT NULL,
 
+    minimum_balance NUMERIC(15,2)
+    DEFAULT NULL,
+
     icon VARCHAR(50),
 
     color VARCHAR(50),

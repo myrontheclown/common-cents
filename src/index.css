@@ -106,4 +106,14 @@ html * {
   body {
     @apply font-sans bg-[var(--bg-page)] text-[var(--text-primary)] antialiased overflow-x-hidden;
   }
+
+  input, select, textarea, button {
+    font-size: 16px;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }

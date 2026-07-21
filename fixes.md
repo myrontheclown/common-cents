@@ -1,0 +1,3 @@
+- auto login instead of logging in every single time
+- UI on phone
+- edit profile is not working but general core is working

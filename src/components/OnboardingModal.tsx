@@ -16,13 +16,13 @@ const CURRENCIES = [
   { value: 'CHF', label: 'CHF (Fr)' },
 ];
 
-interface GoogleOnboardingModalProps {
+interface OnboardingModalProps {
   userId: string;
   prefillName: string;
   onComplete: () => void;
 }
 
-export default function GoogleOnboardingModal({ userId, prefillName, onComplete }: GoogleOnboardingModalProps) {
+export default function OnboardingModal({ userId, prefillName, onComplete }: OnboardingModalProps) {
   const [displayName, setDisplayName] = useState(prefillName);
   const [age, setAge] = useState('');
   const [currency, setCurrency] = useState('INR');

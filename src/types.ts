@@ -10,8 +10,9 @@ export interface Account {
   name: string;
   type: AccountType;
   balance: number;
-  color: string; // Tailwind bg color class or raw color hex (e.g. '#FF6B6B')
-  icon: string;  // Icon name from lucide-react
+  color: string;
+  icon: string;
+  minimumBalance?: number;
 }
 
 export type PaymentMethodType = 'upi' | 'debit' | 'credit' | 'cash' | 'netbanking';

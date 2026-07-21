@@ -1,18 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const CURRENCIES = [
-  { value: 'INR', label: 'INR (₹)' },
-  { value: 'USD', label: 'USD ($)' },
-  { value: 'EUR', label: 'EUR (€)' },
-  { value: 'GBP', label: 'GBP (£)' },
-  { value: 'JPY', label: 'JPY (¥)' },
-  { value: 'CAD', label: 'CAD (C$)' },
-  { value: 'AUD', label: 'AUD (A$)' },
-  { value: 'SGD', label: 'SGD (S$)' },
-  { value: 'AED', label: 'AED (د.إ)' },
-  { value: 'CHF', label: 'CHF (Fr)' },
-];
+
 
 interface AuthPageProps {
   onSignIn: (email: string, password: string) => Promise<void>;
@@ -33,9 +22,6 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [age, setAge] = useState('');
-  const [currency, setCurrency] = useState('INR');
-  const [monthlySavingsGoal, setMonthlySavingsGoal] = useState('50000');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,8 +33,6 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
     if (mode === 'signup') {
       if (!displayName.trim()) { setError('Display name is required.'); return false; }
       if (password !== confirmPassword) { setError('Passwords do not match.'); return false; }
-      if (age && (isNaN(Number(age)) || Number(age) <= 0)) { setError('Age must be a positive number.'); return false; }
-      if (monthlySavingsGoal && (isNaN(Number(monthlySavingsGoal)) || Number(monthlySavingsGoal) < 0)) { setError('Monthly savings goal must be 0 or greater.'); return false; }
     }
     return true;
   };
@@ -64,9 +48,6 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
       } else {
         await onSignUp(email, password, {
           displayName: displayName.trim(),
-          age: age ? Number(age) : null,
-          currency,
-          monthlySavingsGoal: monthlySavingsGoal ? Number(monthlySavingsGoal) : undefined,
         });
       }
     } catch (err: any) {
@@ -218,70 +199,7 @@ export default function AuthPage({ onSignIn, onSignUp, onGoogleSignIn }: AuthPag
               )}
             </AnimatePresence>
 
-            {/* ONBOARDING FIELDS (Sign-up only) */}
-            <AnimatePresence mode="wait">
-              {mode === 'signup' && (
-                <motion.div
-                  key="onboarding"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="border-t-2 border-[var(--border-color)] pt-4 mt-1"
-                >
-                  <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block mb-3 uppercase tracking-wider">
-                    OPTIONAL PERSONALIZATION
-                  </span>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
-                        AGE <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="150"
-                        placeholder="e.g. 28"
-                        value={age}
-                        onChange={(e) => setAge(e.target.value)}
-                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
-                        CURRENCY <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span>
-                      </label>
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value)}
-                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
-                      >
-                        {CURRENCIES.map(c => (
-                          <option key={c.value} value={c.value}>{c.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mt-3">
-                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
-                      MONTHLY SAVINGS GOAL <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1000"
-                      placeholder="50000"
-                      value={monthlySavingsGoal}
-                      onChange={(e) => setMonthlySavingsGoal(e.target.value)}
-                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* ERROR */}
             <AnimatePresence>
