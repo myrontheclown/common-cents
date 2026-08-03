@@ -91,6 +91,7 @@ export default function FloatingHub() {
   const [category, setCategory] = useState('Food & Dining');
   const [accountId, setAccountId] = useState(accounts[0]?.id || '');
   const [paymentMethodId, setPaymentMethodId] = useState('');
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Goal
   const [goalName, setGoalName] = useState('');
@@ -153,6 +154,7 @@ export default function FloatingHub() {
     setCategory('Food & Dining');
     setAccountId(accounts[0]?.id || '');
     setPaymentMethodId('');
+    setTransactionDate(new Date().toISOString().split('T')[0]);
     setGoalName('');
     setGoalTarget('');
     setGoalDeadline('');
@@ -220,7 +222,7 @@ export default function FloatingHub() {
     }
 
     addTransaction({
-      date: new Date().toISOString().split('T')[0],
+      date: transactionDate,
       amount: parsedAmount,
       description,
       category,
@@ -251,7 +253,7 @@ export default function FloatingHub() {
     }
 
     addTransaction({
-      date: new Date().toISOString().split('T')[0],
+      date: transactionDate,
       amount: parsedAmount,
       description,
       category: 'Income',
@@ -339,7 +341,7 @@ export default function FloatingHub() {
 
     // Add source debit
     addTransaction({
-      date: new Date().toISOString().split('T')[0],
+      date: transactionDate,
       amount: parsedAmount,
       description: `Transfer to ${toAcc.name}`,
       category: 'Transfer',
@@ -349,7 +351,7 @@ export default function FloatingHub() {
 
     // Add destination credit
     addTransaction({
-      date: new Date().toISOString().split('T')[0],
+      date: transactionDate,
       amount: parsedAmount,
       description: `Transfer from ${fromAcc.name}`,
       category: 'Transfer',
@@ -415,7 +417,7 @@ export default function FloatingHub() {
     const { amount: parsedAmount, description, category, accountId, paymentMethodId, accountName } = pendingExpense;
 
     addTransaction({
-      date: new Date().toISOString().split('T')[0],
+      date: transactionDate,
       amount: parsedAmount,
       description,
       category,
@@ -699,6 +701,19 @@ export default function FloatingHub() {
 
                   <div>
                     <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                      TRANSACTION DATE
+                    </label>
+                    <input
+                      type="date"
+                      value={transactionDate}
+                      onChange={(e) => setTransactionDate(e.target.value)}
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
                       DEBIT SOURCE VAULT
                     </label>
                     <select
@@ -809,6 +824,19 @@ export default function FloatingHub() {
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                      TRANSACTION DATE
+                    </label>
+                    <input
+                      type="date"
+                      value={transactionDate}
+                      onChange={(e) => setTransactionDate(e.target.value)}
+                      className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)] transition-colors"
+                      required
+                    />
                   </div>
 
                   <div>

@@ -1,5 +1,17 @@
 import type { Account, Budget } from '../types';
 
+export const DEFAULT_MINIMUM_BALANCE = 1000;
+
+export function getMinimumBalance(account: { minimumBalance?: number }): number {
+  return account.minimumBalance != null && account.minimumBalance > 0
+    ? account.minimumBalance
+    : DEFAULT_MINIMUM_BALANCE;
+}
+
+export function isLowBalance(account: { minimumBalance?: number; balance: number }): boolean {
+  return account.balance < getMinimumBalance(account);
+}
+
 export function applyTransactionToAccounts(
   accounts: Account[],
   tx: { accountId: string; type: string; amount: number },

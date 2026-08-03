@@ -54,6 +54,7 @@ interface FinanceState {
   
   setAccounts: (accounts: Account[]) => void;
   setVaultsHydrated: (hydrated: boolean) => void;
+  adjustVaultBalance: (accountId: string, newBalance: number, reason?: string, userId?: string) => Promise<void>;
   setTransactions: (transactions: Transaction[]) => void;
   setTransactionsHydrated: (hydrated: boolean) => void;
   setPaymentMethods: (paymentMethods: PaymentMethod[]) => void;
@@ -373,6 +374,34 @@ export const useFinanceStore = create<FinanceState>()(
           updateStreakAndAchievementsInternal(set, get, txSnapshot);
           throw e;
         }
+      },
+
+      adjustVaultBalance: async (accountId, newBalance, reason, userId) => {
+        const account = get().accounts.find(a => a.id === accountId);
+        if (!account) return;
+        if (!Number.isFinite(newBalance)) return;
+
+        const targetBalance = Number(newBalance.toFixed(2));
+        const delta = Number((targetBalance - account.balance).toFixed(2));
+        if (delta === 0) return;
+
+        const isIncrease = delta > 0;
+        const magnitude = Number(Math.abs(delta).toFixed(2));
+        const note = reason?.trim();
+
+        await get().addTransaction(
+          {
+            date: new Date().toISOString().split('T')[0],
+            amount: magnitude,
+            description: note
+              ? `Balance Adjustment: ${note}`
+              : `Balance Adjustment to ₹${targetBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+            category: 'Balance Adjustment',
+            type: isIncrease ? 'income' : 'expense',
+            accountId,
+          },
+          userId
+        );
       },
 
       deleteTransaction: async (id) => {

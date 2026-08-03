@@ -1,3 +1,3 @@
-- auto login instead of logging in every single time
-- UI on phone
-- edit profile is not working but general core is working
+- give option to edit balance
+- add a permanent warning if bank balance is below 1000 rs
+- while entering a new expense there is no option to set date

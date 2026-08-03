@@ -32,6 +32,7 @@ import {
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
+import { isLowBalance, getMinimumBalance } from '../lib/financialHelpers';
 import LowBalanceWarning from './LowBalanceWarning';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
@@ -67,6 +68,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
   const [category, setCategory] = useState('Food & Dining');
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [accId, setAccId] = useState(accounts[0]?.id || 'bank-1');
+  const [txDate, setTxDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
 
@@ -82,7 +84,7 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
   } | null>(null);
 
   const lowBalanceVaults = accounts.filter(
-    a => a.minimumBalance != null && a.minimumBalance > 0 && a.balance < a.minimumBalance
+    a => isLowBalance(a)
   );
 
   const getVaultEmoji = (type: string) => {
@@ -297,11 +299,12 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
       category: type === 'income' ? 'Income' : category,
       type,
       accountId: accId,
-      date: new Date().toISOString().split('T')[0]
+      date: txDate
     }, auth.userId ?? undefined);
 
     setDesc('');
     setAmount('');
+    setTxDate(new Date().toISOString().split('T')[0]);
   };
 
   const handleProceedWithQuickTx = () => {
@@ -313,13 +316,14 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
       category: pendingTx.type === 'income' ? 'Income' : pendingTx.category,
       type: pendingTx.type,
       accountId: pendingTx.accountId,
-      date: new Date().toISOString().split('T')[0]
+      date: txDate
     }, auth.userId ?? undefined);
 
     setShowBalanceWarning(false);
     setPendingTx(null);
     setDesc('');
     setAmount('');
+    setTxDate(new Date().toISOString().split('T')[0]);
   };
 
   // Real-time API refresh of AI insights
@@ -473,7 +477,7 @@ console.table(
               <Plus className="w-3.5 h-3.5 text-[var(--text-primary)]" />
               QUICK TRANSMISSION VALVE (INJECT CASHFLOW)
             </h3>
-            <form onSubmit={handleTransactionSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <form onSubmit={handleTransactionSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <div>
                 <input
                   type="text"
@@ -506,6 +510,15 @@ console.table(
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <input
+                  type="date"
+                  value={txDate}
+                  onChange={(e) => setTxDate(e.target.value)}
+                  className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-1.5 font-mono text-xs outline-none"
+                  required
+                />
               </div>
               <div className="flex gap-2">
                 <select
@@ -795,17 +808,17 @@ console.table(
                     </div>
                     <div>
                       <span className="text-[9px] text-gray-500 block uppercase font-bold">Minimum Threshold</span>
-                      <span className="font-black text-red-600">{formatINR(v.minimumBalance!)}</span>
+                      <span className="font-black text-red-600">{formatINR(getMinimumBalance(v))}</span>
                     </div>
                   </div>
                   <div className="mt-2 w-full bg-gray-200 h-2 border border-red-500">
                     <div
                       className="bg-red-600 h-full"
-                      style={{ width: `${Math.min(100, (v.balance / v.minimumBalance) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (v.balance / getMinimumBalance(v)) * 100)}%` }}
                     />
                   </div>
                   <p className="font-mono text-[9px] text-red-600 mt-1.5 font-bold">
-                    Balance is below the configured minimum. Consider adding funds.
+                    Balance is below the configured minimum (default ₹1,000 if unset). Consider adding funds.
                   </p>
                 </div>
               ))}
@@ -1176,13 +1189,13 @@ console.table(
                   const netWorth = Math.max(totalNetWorth, 1);
                   const netWorthPct = Math.max(0, Math.min(100, (acc.balance / netWorth) * 100));
                   const isNegative = acc.balance < 0;
-                  const isLowBalance = acc.minimumBalance != null && acc.minimumBalance > 0 && acc.balance < acc.minimumBalance;
+                  const isLowBalanceVault = isLowBalance(acc);
 
                   return (
                     <div
                       key={acc.id}
                       className={`border-2 p-3.5 shadow-[3px_3px_0px_var(--shadow-color)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_var(--shadow-color)] ${
-                        isLowBalance
+                        isLowBalanceVault
                           ? 'border-red-500 bg-red-50 shadow-[3px_3px_0px_rgba(220,38,38,0.3)]'
                           : isNegative
                             ? 'border-[var(--border-color)] bg-red-50'
@@ -1196,7 +1209,7 @@ console.table(
                           <span className="font-display font-bold text-xs text-[var(--text-primary)] uppercase truncate" title={acc.name}>
                             {acc.name}
                           </span>
-                          {isLowBalance ? (
+                          {isLowBalanceVault ? (
                             <span className="flex items-center gap-0.5 bg-orange-200 border border-orange-600 px-1 py-0.5 font-mono text-[8px] font-bold text-orange-700 uppercase leading-none">
                               <AlertTriangle className="w-2.5 h-2.5" />
                               Low Balance

@@ -49,6 +49,7 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
     updatePreferences, 
     addAccount,
     updateAccount,
+    adjustVaultBalance,
     addPaymentMethod,
     deletePaymentMethod,
     updatePaymentMethod,
@@ -99,6 +100,10 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
   const [newAccMinBalance, setNewAccMinBalance] = useState('');
   const [newAccColor, setNewAccColor] = useState('#4F8CC9');
   const [newAccIcon, setNewAccIcon] = useState('Landmark');
+
+  // Balance adjustment state
+  const [adjustBalance, setAdjustBalance] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
 
   // Payment Method form states
   const [newPmName, setNewPmName] = useState('');
@@ -185,6 +190,31 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
     triggerNotification(`NEW VAULT "${newAccName.toUpperCase()}" ADDED TO COMMON CENTS INDEX.`);
   };
 
+  const handleAdjustBalanceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAccount) return;
+
+    const parsedBalance = parseFloat(adjustBalance);
+    if (isNaN(parsedBalance)) {
+      triggerNotification('ERROR: VALID NEW BALANCE REQUIRED.');
+      return;
+    }
+
+    try {
+      await adjustVaultBalance(
+        editingAccount.id,
+        Number(parsedBalance.toFixed(2)),
+        adjustReason.trim() || undefined,
+        auth.userId ?? undefined,
+      );
+      triggerNotification(`VAULT "${editingAccount.name.toUpperCase()}" BALANCE RECONCILED. ADJUSTMENT LOGGED TO LEDGER.`);
+      setAdjustBalance('');
+      setAdjustReason('');
+    } catch (err: any) {
+      triggerNotification(`ERROR: BALANCE ADJUSTMENT FAILED — ${err?.message || 'UNKNOWN'}`);
+    }
+  };
+
   const handleEditPaymentMethod = (pm: PaymentMethod) => {
     setEditingPaymentMethod(pm);
     setNewPmName(pm.name);
@@ -246,6 +276,8 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
     setNewAccType('bank');
     setNewAccColor('#4F8CC9');
     setNewAccIcon('Landmark');
+    setAdjustBalance('');
+    setAdjustReason('');
   };
 
   React.useEffect(() => {
@@ -258,6 +290,8 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
     setNewAccIcon(acc.icon);
     setNewAccBalance('');
     setNewAccMinBalance(acc.minimumBalance?.toString() || '');
+    setAdjustBalance('');
+    setAdjustReason('');
     onClearPendingVaultEdit();
     (document.getElementById('settings-shell') as HTMLElement)?.scrollIntoView({ behavior: 'smooth' });
   }, [pendingVaultEdit]);
@@ -767,11 +801,13 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
               </div>
 
               {editingAccount ? (
-                <div>
-                  <label className="font-mono text-[10px] font-bold text-[var(--text-primary)] block mb-1">CURRENT BALANCE (₹)</label>
-                  <div className="w-full bg-[var(--bg-muted)] border-2 border-[var(--border-color)] p-2 font-mono text-xs text-[var(--text-muted)] flex items-center h-[38px]">
-                    Balance is derived from transactions and cannot be edited directly.
-                  </div>
+                <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-info)] bg-[var(--card-bg)] p-3 shadow-[2px_2px_0px_var(--shadow-color)] md:col-span-2">
+                  <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase tracking-wider mb-1">
+                    CURRENT BALANCE
+                  </span>
+                  <span className="font-display text-xl font-black text-[var(--text-primary)] block">
+                    ₹{editingAccount.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               ) : (
                 <div>
@@ -804,6 +840,54 @@ export default function Settings({ pendingVaultEdit, onClearPendingVaultEdit }: 
                 Get alerted when vault balance drops below this threshold.
               </span>
             </div>
+
+            {editingAccount && (
+              <div className="border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-primary)] p-3 bg-[var(--bg-muted)] shadow-[3px_3px_0px_var(--shadow-color)]">
+                <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wider block mb-2 border-b border-[var(--border-color)] pb-1">
+                  ⚖️ ADJUST BALANCE
+                </span>
+                <p className="font-mono text-[9px] text-[var(--text-muted)] mb-3">
+                  Set a new vault balance. A traceable "Balance Adjustment" ledger entry is created automatically to keep calculations reconciled.
+                </p>
+                <form onSubmit={handleAdjustBalanceSubmit} className="flex flex-col gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-mono text-[9px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                        NEW BALANCE (₹)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder={String(editingAccount.balance)}
+                        value={adjustBalance}
+                        onChange={(e) => setAdjustBalance(e.target.value)}
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)]"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="font-mono text-[9px] font-bold text-[var(--text-primary)] block mb-1 uppercase tracking-wider">
+                        REASON <span className="text-[var(--text-muted)] font-normal">(OPTIONAL)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Bank statement correction"
+                        value={adjustReason}
+                        onChange={(e) => setAdjustReason(e.target.value)}
+                        className="w-full bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 font-mono text-xs outline-none focus:bg-[var(--bg-input-focus)]"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="bg-[var(--accent-primary)] text-[#000000] font-display text-xs font-bold px-4 py-2 border-2 border-[var(--border-color)] shadow-[2px_2px_0px_var(--shadow-color)] hover:shadow-[3px_3px_0px_var(--shadow-color)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none self-start"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    SAVE ADJUSTMENT
+                  </button>
+                </form>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* ACC TYPE */}
