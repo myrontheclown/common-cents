@@ -33,6 +33,7 @@ import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
 import { isLowBalance, getMinimumBalance } from '../lib/financialHelpers';
+import { getBillingCycle, cycleLabel, monthlyEquivalent, yearlyEquivalent, getSubscriptionStatus, getSubscriptionProgress } from '../lib/subscriptionUtils';
 import LowBalanceWarning from './LowBalanceWarning';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
@@ -53,7 +54,8 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     addTransaction,
     setInsights,
     paymentMethods,
-    deleteGoal
+    deleteGoal,
+    markSubscriptionPaid
   } = useFinanceStore();
   const auth = useAuthContext();
 
@@ -238,24 +240,55 @@ export default function CommandCenter({ onNavigateToLedger }: CommandCenterProps
     d.setDate(d.getDate() - (27 - i));
     const dateStr = d.toISOString().split('T')[0];
     const dayTxs = transactions.filter(t => t.date === dateStr);
-    const expenseTotal = dayTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const expenseTxs = dayTxs.filter(t => t.type === 'expense');
+    const expenseTotal = expenseTxs.reduce((sum, t) => sum + t.amount, 0);
     return {
       date: dateStr,
       day: d.getDate(),
       total: expenseTotal,
-      count: dayTxs.length
+      count: expenseTxs.length
     };
   });
+  const heatmapMax = Math.max(...heatmapCells.map(c => c.total), 0);
+  const heatmapCellsWithIntensity = heatmapCells.map(cell => ({
+    ...cell,
+    intensity: heatmapMax > 0 && cell.total > 0
+      ? Math.max(1, Math.min(4, Math.round((cell.total / heatmapMax) * 4)))
+      : 0,
+  }));
 
-  // 4. Monthly Trend Data (Seeded trailing trend for charts)
-  const trendData = [
-    { name: 'Jan', NetWorth: totalNetWorth - 15000, Income: 4200, Expenses: 3100 },
-    { name: 'Feb', NetWorth: totalNetWorth - 11000, Income: 4500, Expenses: 2900 },
-    { name: 'Mar', NetWorth: totalNetWorth - 8000, Income: 5000, Expenses: 3600 },
-    { name: 'Apr', NetWorth: totalNetWorth - 4500, Income: 4800, Expenses: 3100 },
-    { name: 'May', NetWorth: totalNetWorth - 2000, Income: 5100, Expenses: 3400 },
-    { name: 'Jun', NetWorth: totalNetWorth, Income: totalIncome || 9250, Expenses: totalExpenses || 4118 },
-  ];
+  // 4. Monthly Trend Data (computed from real transactions over the last 6 months)
+  const trendData = (() => {
+    const sortedTxDates = [...transactions].map(t => t.date).filter(Boolean).sort();
+    const latestTxDate = sortedTxDates[sortedTxDates.length - 1] || new Date().toISOString().split('T')[0];
+    const latestDate = new Date(latestTxDate + 'T00:00:00');
+
+    const months: { name: string; key: string }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(latestDate.getFullYear(), latestDate.getMonth() - i, 1);
+      months.push({
+        name: d.toLocaleDateString('en-US', { month: 'short' }),
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      });
+    }
+
+    const monthSummary: Record<string, { income: number; expenses: number }> = {};
+    transactions.forEach(t => {
+      const key = (t.date || '').substring(0, 7);
+      if (!key) return;
+      const s = (monthSummary[key] = monthSummary[key] || { income: 0, expenses: 0 });
+      if (t.type === 'income') s.income += t.amount;
+      else if (t.type === 'expense') s.expenses += t.amount;
+    });
+
+    let suffixNet = 0;
+    return months.map(m => {
+      const s = monthSummary[m.key] || { income: 0, expenses: 0 };
+      const netWorth = totalNetWorth - suffixNet;
+      suffixNet += s.income - s.expenses;
+      return { name: m.name, NetWorth: netWorth, Income: s.income, Expenses: s.expenses };
+    });
+  })();
 
   // Categories list
   const categoriesList = [
@@ -658,19 +691,22 @@ console.table(
                   Spending heatmap (Last 28 Days)
                 </span>
                 <div className="grid grid-cols-7 gap-1">
-                  {heatmapCells.map((cell, idx) => {
-                    let color = 'bg-[var(--bg-muted)]'; // No spending
-                    if (cell.total > 0 && cell.total <= 30) {
+                  {heatmapCellsWithIntensity.map((cell, idx) => {
+                    const level = cell.intensity;
+                    let color = 'bg-[var(--bg-muted)]'; // No spending on this date
+                    if (level === 1) {
                       color = 'bg-[var(--accent-warning)]/40';
-                    } else if (cell.total > 30 && cell.total <= 120) {
+                    } else if (level === 2) {
+                      color = 'bg-[var(--accent-warning)]';
+                    } else if (level === 3) {
                       color = 'bg-[var(--accent-danger)]/60';
-                    } else if (cell.total > 120) {
+                    } else if (level === 4) {
                       color = 'bg-[var(--accent-danger)] border border-[var(--border-color)]';
                     }
                     return (
                       <div 
                         key={idx}
-                        title={`Date: ${cell.date}, Spent: ₹${cell.total.toFixed(2)}`}
+                        title={cell.total > 0 ? `Date: ${cell.date}, Spent: ₹${cell.total.toFixed(2)}` : `Date: ${cell.date}, No spending`}
                         className={`aspect-square w-full rounded-none transition-all ${color}`}
                       />
                     );
@@ -850,14 +886,10 @@ console.table(
                     {(() => {
                       const activeSubsList = subscriptions.filter(s => s.active ?? s.isActive ?? true);
                       const totalMonthly = activeSubsList.reduce((sum, s) => {
-                        const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-                        if (cycle === 'yearly') return sum + (s.amount / 12);
-                        return sum + s.amount;
+                        return sum + monthlyEquivalent(s.amount, getBillingCycle(s));
                       }, 0);
                       const totalAnnual = activeSubsList.reduce((sum, s) => {
-                        const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-                        if (cycle === 'yearly') return sum + s.amount;
-                        return sum + (s.amount * 12);
+                        return sum + yearlyEquivalent(s.amount, getBillingCycle(s));
                       }, 0);
                       return (
                         <div className="flex flex-col items-end">
@@ -873,7 +905,7 @@ console.table(
               <div className="flex flex-col gap-3 mb-3 max-h-[300px] overflow-y-auto pr-1">
                 {subscriptions.filter(s => s.active ?? s.isActive ?? true).map((sub) => {
                   const svcName = sub.service_name || sub.name || '';
-                  const cycle = sub.billing_cycle || (sub.frequency === 'annual' ? 'yearly' : 'monthly') || 'monthly';
+                  const cycle = getBillingCycle(sub);
                   const renewalDate = sub.renewal_date || sub.nextBillingDate || '';
                   const isActive = sub.active ?? sub.isActive ?? true;
                   const subColor = sub.color || '#8B5CF6';
@@ -892,43 +924,9 @@ console.table(
                     }
                   };
 
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const renewalDateObj = new Date(renewalDate);
-                  renewalDateObj.setHours(0, 0, 0, 0);
-                  const diffTime = renewalDateObj.getTime() - today.getTime();
-                  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-                  const cycleDays = cycle === 'yearly' ? 365 : 30;
-                  const lastRenewal = new Date(renewalDateObj);
-                  lastRenewal.setDate(lastRenewal.getDate() - cycleDays);
-                  const daysElapsed = Math.round((today.getTime() - lastRenewal.getTime()) / (1000 * 60 * 60 * 24));
-                  const progressPct = Math.min(100, Math.max(0, (daysElapsed / cycleDays) * 100));
-
-                  let renewalLabel: string;
-                  let renewalColor: string;
-                  let progressColor: string;
-                  if (diffDays < 0) {
-                    renewalLabel = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
-                    renewalColor = 'text-red-600';
-                    progressColor = '#DC5C5C';
-                  } else if (diffDays === 0) {
-                    renewalLabel = 'Renews Today';
-                    renewalColor = 'text-orange-600';
-                    progressColor = '#F59E0B';
-                  } else if (diffDays === 1) {
-                    renewalLabel = 'Renews Tomorrow';
-                    renewalColor = 'text-orange-600';
-                    progressColor = '#F59E0B';
-                  } else if (diffDays <= 7) {
-                    renewalLabel = `⚠ Renews in ${diffDays} days`;
-                    renewalColor = 'text-amber-600';
-                    progressColor = '#D4A72C';
-                  } else {
-                    renewalLabel = `🔄 Renews in ${diffDays} days`;
-                    renewalColor = 'text-green-600';
-                    progressColor = '#22C55E';
-                  }
+                  const status = getSubscriptionStatus(sub);
+                  const progressPct = getSubscriptionProgress(sub);
+                  const hasVault = !!(sub.payment_account || sub.accountId);
 
                   const nextChargeDate = new Date(renewalDate);
                   const chargeFormatted = nextChargeDate.toLocaleDateString('en-GB', {
@@ -956,19 +954,19 @@ console.table(
                             )}
                           </div>
                           <div className="font-mono text-[11px] font-bold text-[var(--text-primary)] mt-0.5">
-                            ₹{sub.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycle === 'yearly' ? 'year' : 'month'}
+                            ₹{sub.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycleLabel(cycle).toLowerCase()}
                           </div>
                         </div>
                       </div>
 
-                      <div className={`mt-2 px-1.5 py-0.5 border border-[var(--border-color)] font-mono text-[9px] font-bold ${renewalColor} inline-block`}>
-                        {renewalLabel}
+                      <div className={`mt-2 px-1.5 py-0.5 border border-[var(--border-color)] font-mono text-[9px] font-bold ${status.textClass} ${status.bgClass} inline-block`}>
+                        {status.label}
                       </div>
 
                       <div className="w-full h-2 border border-[var(--border-color)] bg-[var(--bg-muted)] mt-2">
                         <div
                           className="h-full transition-all"
-                          style={{ width: `${progressPct}%`, backgroundColor: progressColor }}
+                          style={{ width: `${progressPct}%`, backgroundColor: status.progressClass }}
                         />
                       </div>
 
@@ -988,6 +986,17 @@ console.table(
                           </span>
                         )}
                       </div>
+
+                      {hasVault && (
+                        <button
+                          onClick={() => markSubscriptionPaid(sub.id, auth.userId ?? undefined)}
+                          disabled={status.key === 'paid' || status.key === 'active' || status.key === 'paused'}
+                          className="mt-2 w-full bg-[var(--accent-success)] text-[#000000] font-display text-[10px] font-bold py-1.5 border-2 border-[var(--border-color)] shadow-[2px_2px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          ✓ MARK AS PAID
+                        </button>
+                      )}
                     </div>
                   );
                 })}

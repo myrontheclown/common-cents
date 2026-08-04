@@ -19,7 +19,8 @@ import {
 import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
 import LowBalanceWarning from './LowBalanceWarning';
-import type { Goal, Subscription } from '../types';
+import type { Goal, Subscription, BillingCycle } from '../types';
+import { getBillingCycle, BILLING_CYCLES, CYCLE_LABELS } from '../lib/subscriptionUtils';
 
 type ModalType = 'expense' | 'income' | 'goal' | 'transfer' | 'subscription' | 'payment_method' | null;
 
@@ -70,7 +71,7 @@ export default function FloatingHub() {
       setEditingSubscription(sub);
       setSubServiceName(sub.service_name || sub.name || '');
       setSubAmount(String(sub.amount));
-      setSubBillingCycle(sub.billing_cycle === 'yearly' ? 'yearly' : 'monthly');
+      setSubBillingCycle(getBillingCycle(sub));
       setSubCategory(sub.category || 'Utilities');
       setSubPaymentAccount(sub.payment_account || sub.accountId || accounts[0]?.id || '');
       setSubRenewalDate(sub.renewal_date || sub.nextBillingDate || '');
@@ -109,7 +110,7 @@ export default function FloatingHub() {
   // Subscription Form States
   const [subServiceName, setSubServiceName] = useState('');
   const [subAmount, setSubAmount] = useState('');
-  const [subBillingCycle, setSubBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [subBillingCycle, setSubBillingCycle] = useState<BillingCycle>('monthly');
   const [subCategory, setSubCategory] = useState('Utilities');
   const [subPaymentAccount, setSubPaymentAccount] = useState(accounts[0]?.id || '');
   const [subRenewalDate, setSubRenewalDate] = useState('');
@@ -1117,26 +1118,19 @@ export default function FloatingHub() {
                         BILLING CYCLE
                       </label>
                       <div className="grid grid-cols-2 gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setSubBillingCycle('monthly')}
-                          className={`py-2 border-2 border-[var(--border-color)] font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none ${
-                            subBillingCycle === 'monthly' ? 'bg-[var(--card-bg)] border border-[var(--accent-purple)] text-[var(--accent-purple)]' : 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
-                          }`}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          MONTHLY
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSubBillingCycle('yearly')}
-                          className={`py-2 border-2 border-[var(--border-color)] font-mono text-[10px] font-bold transition-all shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none ${
-                            subBillingCycle === 'yearly' ? 'bg-[var(--card-bg)] border border-[var(--accent-purple)] text-[var(--accent-purple)]' : 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
-                          }`}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          YEARLY
-                        </button>
+                        {BILLING_CYCLES.map((cycle) => (
+                          <button
+                            key={cycle}
+                            type="button"
+                            onClick={() => setSubBillingCycle(cycle)}
+                            className={`py-2 border-2 border-[var(--border-color)] font-mono text-[9px] font-bold transition-all shadow-[1.5px_1.5px_0px_var(--shadow-color)] active:translate-y-[1px] active:shadow-none ${
+                              subBillingCycle === cycle ? 'bg-[var(--card-bg)] border border-[var(--accent-purple)] text-[var(--accent-purple)]' : 'bg-[var(--bg-surface)] text-[var(--text-primary)]'
+                            }`}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {CYCLE_LABELS[cycle].toUpperCase()}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>

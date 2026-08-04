@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { CreditCard } from 'lucide-react';
 import type { Subscription } from '../../types';
 import { formatCurrency } from '../../lib/analytics/dateRanges';
+import { getBillingCycle, cycleLabel } from '../../lib/subscriptionUtils';
 
 interface Props {
   subscriptions: Subscription[];
@@ -34,7 +35,7 @@ export default function SubscriptionSummary({ subscriptions, monthlyCost }: Prop
                 <div key={sub.id} className="border border-[var(--border-color)] p-2 flex items-center justify-between bg-[var(--bg-surface)]">
                   <span className="font-mono text-[10px] font-bold text-[var(--text-primary)]">{sub.service_name}</span>
                   <span className="font-mono text-[10px] text-[var(--text-muted)]">
-                    ₹{sub.amount.toLocaleString('en-IN')}/{sub.billing_cycle === 'yearly' ? 'yr' : 'mo'}
+                    ₹{sub.amount.toLocaleString('en-IN')}/{cycleLabel(getBillingCycle(sub))}
                   </span>
                 </div>
               ))}

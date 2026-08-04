@@ -25,6 +25,7 @@ import { useFinanceStore } from '../store';
 import { useAuthContext } from '../providers/AuthProvider';
 import { Transaction, Subscription, PaymentMethod } from '../types';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
+import { getBillingCycle, cycleLabel, getSubscriptionStatus } from '../lib/subscriptionUtils';
 import LowBalanceWarning from './LowBalanceWarning';
 
 export default function Ledger() {
@@ -38,6 +39,7 @@ export default function Ledger() {
     addTransaction,
     updateTransaction,
     toggleSubscriptionActive,
+    markSubscriptionPaid,
     deleteSubscription
   } = useFinanceStore();
 
@@ -396,41 +398,11 @@ export default function Ledger() {
             const acc = accounts.find(a => a.id === (sub.payment_account || sub.accountId));
             const svcName = sub.service_name || sub.name || '';
             const amount = sub.amount;
-            const cycle = sub.billing_cycle || sub.frequency || 'monthly';
+            const cycle = getBillingCycle(sub);
             const renewalDate = sub.renewal_date || sub.nextBillingDate || '';
             const isActive = sub.active ?? sub.isActive ?? true;
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const renewal = new Date(renewalDate);
-            renewal.setHours(0, 0, 0, 0);
-            const diffTime = renewal.getTime() - today.getTime();
-            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-            let renewalLabel: string;
-            let renewalColor: string;
-            let renewalBg: string;
-            if (diffDays < 0) {
-              renewalLabel = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
-              renewalColor = 'text-red-600';
-              renewalBg = 'bg-red-100';
-            } else if (diffDays === 0) {
-              renewalLabel = 'Renews Today';
-              renewalColor = 'text-orange-600';
-              renewalBg = 'bg-orange-100';
-            } else if (diffDays === 1) {
-              renewalLabel = 'Renews Tomorrow';
-              renewalColor = 'text-orange-600';
-              renewalBg = 'bg-orange-100';
-            } else if (diffDays <= 7) {
-              renewalLabel = `⚠ Renews in ${diffDays} days`;
-              renewalColor = 'text-amber-600';
-              renewalBg = 'bg-amber-100';
-            } else {
-              renewalLabel = `Renews in ${diffDays} days`;
-              renewalColor = 'text-green-600';
-              renewalBg = 'bg-green-100';
-            }
+            const status = getSubscriptionStatus(sub);
+            const hasVault = !!(sub.payment_account || sub.accountId);
 
             return (
               <div
@@ -460,7 +432,7 @@ export default function Ledger() {
                   <span className="text-[var(--text-muted)]">
                     Amount:{' '}
                     <span className="font-bold text-[var(--text-primary)]">
-                      ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycle === 'yearly' ? 'yr' : 'mo'}
+                      ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/{cycleLabel(cycle).toLowerCase()}
                     </span>
                   </span>
                   <span className="text-[var(--text-muted)]">
@@ -473,8 +445,8 @@ export default function Ledger() {
                   </span>
                 </div>
 
-                <div className={`mt-2 px-1.5 py-0.5 border border-[var(--border-color)] font-mono text-[9px] font-bold ${renewalColor} ${renewalBg} inline-block`}>
-                  {renewalLabel}
+                <div className={`mt-2 px-1.5 py-0.5 border border-[var(--border-color)] font-mono text-[9px] font-bold ${status.textClass} ${status.bgClass} inline-block`}>
+                  {status.label}
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--border-color)] border-dashed">
@@ -507,6 +479,17 @@ export default function Ledger() {
                   >
                     <X className="w-3.5 h-3.5 text-[var(--text-primary)]" />
                   </button>
+                  {hasVault && (
+                    <button
+                      onClick={() => markSubscriptionPaid(sub.id, auth.userId ?? undefined)}
+                      disabled={status.key === 'paid' || status.key === 'active' || status.key === 'paused'}
+                      className="ml-auto px-2.5 py-1.5 bg-[var(--accent-success)] border border-[var(--border-color)] font-mono text-[10px] font-bold text-[#000000] shadow-[1px_1px_0px_var(--shadow-color)] hover:shadow-[2px_2px_0px_var(--shadow-color)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ cursor: 'pointer' }}
+                      title="Create expense, deduct from vault, and advance renewal date"
+                    >
+                      ✓ MARK PAID
+                    </button>
+                  )}
                 </div>
               </div>
             );

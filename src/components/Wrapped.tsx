@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ReferenceLine } from 'recharts';
+import { parseDate, isInRange } from '../lib/analytics/dateRanges';
+import { getBillingCycle, monthlyEquivalent, subscriptionMonthlyCost, cycleLabel } from '../lib/subscriptionUtils';
 
 export default function Wrapped() {
   const { transactions, accounts, preferences, achievements, subscriptions, paymentMethods } = useFinanceStore();
@@ -42,21 +44,15 @@ export default function Wrapped() {
 
   // --- COMPUTE REAL DYNAMIC DATA ---
   const activeSubsList = subscriptions.filter(s => s.active ?? s.isActive ?? true);
-  const subMonthlySpend = activeSubsList.reduce((sum, s) => {
-    const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-    if (cycle === 'yearly') return sum + (s.amount / 12);
-    return sum + s.amount;
-  }, 0);
+  const subMonthlySpend = subscriptionMonthlyCost(subscriptions);
 
   const mostExpensiveSub = [...activeSubsList].sort((a, b) => {
-    const aCycle = a.billing_cycle || (a.frequency === 'annual' ? 'yearly' : 'monthly');
-    const aMonthly = (aCycle === 'yearly') ? (a.amount / 12) : a.amount;
-    const bCycle = b.billing_cycle || (b.frequency === 'annual' ? 'yearly' : 'monthly');
-    const bMonthly = (bCycle === 'yearly') ? (b.amount / 12) : b.amount;
+    const aMonthly = monthlyEquivalent(a.amount, getBillingCycle(a));
+    const bMonthly = monthlyEquivalent(b.amount, getBillingCycle(b));
     return bMonthly - aMonthly;
   })[0];
 
-  const subMonthlyGrowthAmount = subMonthlySpend * 0.083; // Dynamic modeled 8.3% expansion metric
+  const subCategories = new Set(activeSubsList.map(s => s.category || 'Utilities'));
 
   // --- MOST USED PAYMENT METHOD ---
   const paymentMethodStats = paymentMethods.map(pm => {
@@ -71,89 +67,142 @@ export default function Wrapped() {
   const mostUsedPm = [...paymentMethodStats].sort((a, b) => b.count - a.count)[0];
 
   const netWorth = accounts.reduce((sum, a) => sum + a.balance, 0);
-  const totalInflows = transactions
+
+  // --- REPORT WINDOW: month of the most recent transaction (fallback: current month) ---
+  const allTxDates = transactions.map(t => t.date).filter(Boolean).sort();
+  const latestTxDate = allTxDates[allTxDates.length - 1] || new Date().toISOString().split('T')[0];
+  const reportDate = parseDate(latestTxDate);
+  const reportYear = reportDate.getFullYear();
+  const reportMonth = reportDate.getMonth(); // 0-based
+  const daysInMonth = new Date(reportYear, reportMonth + 1, 0).getDate();
+  const monthStart = `${reportYear}-${String(reportMonth + 1).padStart(2, '0')}-01`;
+  const monthEnd = `${reportYear}-${String(reportMonth + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+  const reportMonthLabel = reportDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const reportMonthUpper = reportDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
+  const reportYearUpper = String(reportYear).toUpperCase();
+  const reportMonthShort = reportDate.toLocaleDateString('en-US', { month: 'short' });
+
+  const prevDate = new Date(reportYear, reportMonth - 1, 1);
+  const prevYear = prevDate.getFullYear();
+  const prevMonth = prevDate.getMonth();
+  const prevDays = new Date(prevYear, prevMonth + 1, 0).getDate();
+  const prevStart = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-01`;
+  const prevEnd = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(prevDays).padStart(2, '0')}`;
+  const prevMonthShort = prevDate.toLocaleDateString('en-US', { month: 'short' });
+  const prevMonthUpper = prevDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
+
+  const monthTxs = transactions.filter(t => isInRange(t.date, monthStart, monthEnd));
+  const prevTxs = transactions.filter(t => isInRange(t.date, prevStart, prevEnd));
+
+  const totalInflows = monthTxs
     .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0) || 125000; // July 2026 fallback
-    
-  const totalOutflows = transactions
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalOutflows = monthTxs
     .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0) || 47350; // July 2026 fallback
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const prevInflows = prevTxs
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const prevOutflows = prevTxs
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   const totalSavings = Math.max(0, totalInflows - totalOutflows);
-  const savingsRate = totalInflows > 0 ? (totalSavings / totalInflows) * 100 : 62;
+  const prevSavings = Math.max(0, prevInflows - prevOutflows);
+  const savingsRate = totalInflows > 0 ? (totalSavings / totalInflows) * 100 : 0;
 
-  const expenses = transactions.filter(t => t.type === 'expense');
-  
+  const expenses = monthTxs.filter(t => t.type === 'expense');
+
   // 1. Top Category
   const categorySpent: Record<string, number> = {};
   expenses.forEach(t => {
     categorySpent[t.category] = (categorySpent[t.category] || 0) + t.amount;
   });
-  if (Object.keys(categorySpent).length === 0) {
-    categorySpent['Food & Dining'] = 18500;
-    categorySpent['Shopping'] = 14200;
-    categorySpent['Housing'] = 8000;
-    categorySpent['Entertainment'] = 6650;
-  }
 
   const topCategoryEntry = Object.entries(categorySpent).sort((a, b) => b[1] - a[1])[0];
-  const topCategoryName = topCategoryEntry ? topCategoryEntry[0] : 'Food & Dining';
-  const topCategorySpent = topCategoryEntry ? topCategoryEntry[1] : 18500;
-  const topCategoryPercentage = totalOutflows > 0 ? (topCategorySpent / totalOutflows) * 100 : 39;
+  const topCategoryName = topCategoryEntry ? topCategoryEntry[0] : 'None Recorded';
+  const topCategorySpent = topCategoryEntry ? topCategoryEntry[1] : 0;
+  const topCategoryPercentage = totalOutflows > 0 ? (topCategorySpent / totalOutflows) * 100 : 0;
+
+  const prevCategorySpent: Record<string, number> = {};
+  prevTxs.filter(t => t.type === 'expense').forEach(t => {
+    prevCategorySpent[t.category] = (prevCategorySpent[t.category] || 0) + t.amount;
+  });
+  const topCategoryPrevSpend = topCategoryEntry ? (prevCategorySpent[topCategoryEntry[0]] || 0) : 0;
+  const topCategoryMomChange = topCategoryPrevSpend > 0
+    ? ((topCategorySpent - topCategoryPrevSpend) / topCategoryPrevSpend) * 100
+    : 0;
 
   // 2. Biggest Purchase
-  const biggestPurchase = expenses.length > 0 
-    ? [...expenses].sort((a, b) => b.amount - a.amount)[0] 
-    : { description: 'Premium Ergonomic Chair', amount: 15400, date: '2026-07-15', category: 'Shopping' };
+  const biggestPurchase = expenses.length > 0
+    ? [...expenses].sort((a, b) => b.amount - a.amount)[0]
+    : null;
 
-  const biggestPurchaseImpact = totalOutflows > 0 ? (biggestPurchase.amount / totalOutflows) * 100 : 32.5;
+  const biggestPurchaseImpact = totalOutflows > 0 && biggestPurchase
+    ? (biggestPurchase.amount / totalOutflows) * 100
+    : 0;
 
   // 3. Most Expensive Day
   const dailyExpenses: Record<string, number> = {};
   expenses.forEach(t => {
     dailyExpenses[t.date] = (dailyExpenses[t.date] || 0) + t.amount;
   });
-  if (Object.keys(dailyExpenses).length === 0) {
-    dailyExpenses['2026-07-15'] = 15400;
-    dailyExpenses['2026-07-04'] = 4500;
-    dailyExpenses['2026-07-28'] = 3200;
-  }
   const mostExpensiveDayEntry = Object.entries(dailyExpenses).sort((a, b) => b[1] - a[1])[0];
-  const mostExpensiveDayDate = mostExpensiveDayEntry ? mostExpensiveDayEntry[0] : '2026-07-15';
-  const mostExpensiveDayAmount = mostExpensiveDayEntry ? mostExpensiveDayEntry[1] : 15400;
+  const mostExpensiveDayDate = mostExpensiveDayEntry ? mostExpensiveDayEntry[0] : '';
+  const mostExpensiveDayAmount = mostExpensiveDayEntry ? mostExpensiveDayEntry[1] : 0;
 
-  // 4. Average Daily Spend
-  const daysInMonth = 31;
+  // 4. Average Daily Spend (actual spending velocity)
   const averageDailySpend = totalOutflows / daysInMonth;
-  const averageDailySpendTrend = -4.8; // Seeded MoM percentage decrease
+  const prevAverageDailySpend = prevOutflows / prevDays;
+  const averageDailySpendTrend = prevAverageDailySpend > 0
+    ? ((averageDailySpend - prevAverageDailySpend) / prevAverageDailySpend) * 100
+    : 0;
 
   // 5. Savings Achievement Streak
-  const savingsStreak = preferences.longestStreak ?? 18; // Streak of days under daily budget velocity cap
+  const savingsStreak = preferences.longestStreak ?? 0;
   const savingsStreakBadge = 'GOLDEN THRUST ENGINE';
 
-  // 6. Spending Heatmap Data (Generate cells for 31 days of July 2026)
-  const heatmapData = Array.from({ length: 31 }, (_, i) => {
+  // 6. Spending Heatmap Data (real expense sums per date; empty when no spending)
+  const heatmapData = Array.from({ length: daysInMonth }, (_, i) => {
     const dayNum = i + 1;
-    const dateStr = `2026-07-${dayNum.toString().padStart(2, '0')}`;
-    const amountSpent = dailyExpenses[dateStr] || (dayNum % 4 === 0 ? 3500 : dayNum % 3 === 0 ? 1200 : 450);
-    let intensity: 'under' | 'moderate' | 'over' = 'under';
-    if (amountSpent > 3000) intensity = 'over';
-    else if (amountSpent > 1000) intensity = 'moderate';
-
+    const dateStr = `${reportYear}-${String(reportMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    const amount = dailyExpenses[dateStr] || 0;
     return {
       day: dayNum,
       date: dateStr,
-      amount: amountSpent,
-      intensity
+      amount,
     };
   });
+  const heatmapMax = Math.max(...heatmapData.map(c => c.amount), 0);
+  const heatmapCells = heatmapData.map(cell => ({
+    ...cell,
+    intensity: heatmapMax > 0 && cell.amount > 0
+      ? Math.max(1, Math.min(4, Math.round((cell.amount / heatmapMax) * 4)))
+      : 0,
+  }));
 
-  // 7. Comparison Chart Data (Current vs Last Month)
+  // 7. Comparison Chart Data (Current vs Last Month, all computed)
+  const prevMonthStartNetWorth = netWorth - (totalInflows - totalOutflows) - (prevInflows - prevOutflows);
   const comparisonData = [
-    { name: 'EXPENSES', Previous: 52100, July: totalOutflows },
-    { name: 'SAVINGS', Previous: 42000, July: totalSavings },
-    { name: 'NET WORTH', Previous: netWorth - 28000 || 220000, July: netWorth || 248000 }
+    { name: 'EXPENSES', Previous: prevOutflows, Current: totalOutflows },
+    { name: 'SAVINGS', Previous: prevSavings, Current: totalSavings },
+    { name: 'NET WORTH', Previous: prevMonthStartNetWorth, Current: netWorth },
   ];
+
+  // Subscription growth vs last month from actual ledger spend in subscription categories
+  const prevSubSpend = prevTxs
+    .filter(t => t.type === 'expense' && subCategories.has(t.category))
+    .reduce((sum, t) => sum + t.amount, 0);
+  const currSubSpend = monthTxs
+    .filter(t => t.type === 'expense' && subCategories.has(t.category))
+    .reduce((sum, t) => sum + t.amount, 0);
+  const subMonthlyGrowthAmount = Math.max(0, currSubSpend - prevSubSpend);
+  const subMonthlyGrowthPct = prevSubSpend > 0
+    ? ((currSubSpend - prevSubSpend) / prevSubSpend) * 100
+    : 0;
 
   // 8. Financial Archetype Determination
   let archetype = 'THE ARCHITECT';
@@ -177,12 +226,12 @@ export default function Wrapped() {
 
   // --- ACTIONS ---
   const copyShareCard = () => {
-    const summaryText = `COMMON CENTS July 2026 Financial Wrapped:\n` +
-      `- Operator: Myron\n` +
+    const summaryText = `COMMON CENTS ${reportMonthLabel} Financial Wrapped:\n` +
+      `- Operator: ${(preferences.name || 'MYRON').toUpperCase()}\n` +
       `- Total Net Worth: ₹${netWorth.toLocaleString('en-IN')}\n` +
-      `- July Savings Rate: ${savingsRate.toFixed(1)}%\n` +
+      `- ${reportMonthUpper} Savings Rate: ${savingsRate.toFixed(1)}%\n` +
       `- Top category spent: ${topCategoryName} (₹${topCategorySpent.toLocaleString('en-IN')})\n` +
-      `- Biggest collision: ${biggestPurchase.description} (₹${biggestPurchase.amount.toLocaleString('en-IN')})\n` +
+      `- Biggest collision: ${biggestPurchase ? `${biggestPurchase.description} (₹${biggestPurchase.amount.toLocaleString('en-IN')})` : 'None recorded'}\n` +
       `- Archetype: ${archetype}\n` +
       `Analyzed with neubrutalist precision by COMMON CENTS.`;
 
@@ -216,13 +265,13 @@ export default function Wrapped() {
               COMMON CENTS
             </h1>
             <h2 className="font-display text-2xl md:text-3xl font-black text-[var(--text-primary)] uppercase bg-[var(--accent-success)] px-3 py-1 border-2 border-[var(--border-color)] inline-block shadow-[2px_2px_0px_var(--shadow-color)]">
-              JULY 2026 WRAPPED
+              {reportMonthUpper} {reportYearUpper} WRAPPED
             </h2>
             <p className="font-mono text-[11px] text-gray-800 max-w-xs mt-6 font-bold leading-relaxed">
               "A month of highs, lows, smart choices, and a few too many takeout orders."
             </p>
             <span className="font-mono text-[9px] bg-[var(--bg-badge)] text-[var(--text-badge)] px-2 py-0.5 mt-8 uppercase tracking-widest font-bold">
-              SYS_OPERATOR: MYRON
+              SYS_OPERATOR: {(preferences.name || 'MYRON').toUpperCase()}
             </span>
           </div>
         );
@@ -280,12 +329,14 @@ export default function Wrapped() {
                 </div>
                 <div className="flex items-center justify-between font-mono text-xs mt-1">
                   <span>MOM MOMENTUM:</span>
-                  <span className="font-extrabold text-red-600 flex items-center">
-                    +4.2% <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span className={`font-extrabold flex items-center ${topCategoryMomChange >= 0 ? 'text-red-600' : 'text-green-700'}`}>
+                    {topCategoryMomChange >= 0 ? '+' : ''}{topCategoryMomChange.toFixed(1)}% {topCategoryMomChange >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                   </span>
                 </div>
                 <div className="font-mono text-[10px] text-[var(--text-muted)] border-t border-[var(--border-color)]/10 mt-2.5 pt-2 italic">
-                  Takeout deliveries and quick coffee sweeps dominated this quadrant.
+                  {topCategoryEntry
+                    ? `${topCategoryName} accounted for ${topCategoryPercentage.toFixed(1)}% of ${reportMonthUpper} outflows.`
+                    : 'No outflows recorded for this period.'}
                 </div>
               </div>
             </div>
@@ -308,24 +359,29 @@ export default function Wrapped() {
               </p>
               
               <div className="bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[5px_5px_0px_var(--shadow-color)]">
-                <span className="font-mono text-[9px] bg-[var(--accent-danger)] text-[#000000] border border-[var(--border-color)] px-1.5 py-0.2 font-extrabold inline-block uppercase">
-                  {biggestPurchase.category.toUpperCase()}
-                </span>
-                <span className="font-display text-xl font-black block text-[var(--text-primary)] mt-2 leading-tight uppercase">
-                  {biggestPurchase.description}
-                </span>
-                <span className="font-display text-4xl font-black block text-red-600 mt-1">
-                  -₹{biggestPurchase.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
-                
-                <div className="flex items-center justify-between border-t border-[var(--border-color)]/10 pt-2 mt-3 font-mono text-[10px] text-[var(--text-muted)]">
-                  <span>DATE REGISTERED:</span>
-                  <span className="font-bold text-[var(--text-primary)]">{biggestPurchase.date}</span>
-                </div>
-                <div className="flex items-center justify-between font-mono text-[10px] text-[var(--text-muted)]">
-                  <span>IMPACT ON JULY SPEND:</span>
-                  <span className="font-bold text-red-600">CONSUMED {biggestPurchaseImpact.toFixed(1)}% OF CASHFLOW</span>
-                </div>
+                {biggestPurchase ? (
+                  <>
+                    <span className="font-mono text-[9px] bg-[var(--accent-danger)] text-[#000000] border border-[var(--border-color)] px-1.5 py-0.2 font-extrabold inline-block uppercase">
+                      {biggestPurchase.category.toUpperCase()}
+                    </span>
+                    <span className="font-display text-xl font-black block text-[var(--text-primary)] mt-2 leading-tight uppercase">
+                      {biggestPurchase.description}
+                    </span>
+                    <span className="font-display text-4xl font-black block text-red-600 mt-1">
+                      -₹{biggestPurchase.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                    <div className="flex items-center justify-between border-t border-[var(--border-color)]/10 pt-2 mt-3 font-mono text-[10px] text-[var(--text-muted)]">
+                      <span>DATE REGISTERED:</span>
+                      <span className="font-bold text-[var(--text-primary)]">{biggestPurchase.date}</span>
+                    </div>
+                    <div className="flex items-center justify-between font-mono text-[10px] text-[var(--text-muted)]">
+                      <span>IMPACT ON {reportMonthUpper} SPEND:</span>
+                      <span className="font-bold text-red-600">CONSUMED {biggestPurchaseImpact.toFixed(1)}% OF CASHFLOW</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-mono text-xs text-[var(--text-muted)]">No debit transactions recorded in this period.</p>
+                )}
               </div>
             </div>
             <span className="font-mono text-[8px] text-[var(--text-muted)] uppercase">RECORD_ID: LARGEST_SINGLE_DEBIT_EVENT</span>
@@ -344,14 +400,20 @@ export default function Wrapped() {
                   THE SPENDING SUMMIT
                 </h3>
                 <div className="bg-[#FFE2E2] border-4 border-[var(--border-color)] p-4 shadow-[3px_3px_0px_var(--shadow-color)] flex items-center justify-between gap-2">
-                  <div>
-                    <span className="font-mono text-[8px] font-bold text-[var(--text-muted)] block uppercase">MOST EXPENSIVE DAY</span>
-                    <span className="font-display text-lg font-black text-[var(--text-primary)] uppercase">{new Date(mostExpensiveDayDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-mono text-[9px] bg-red-600 text-white px-1.5 font-bold uppercase">OUTFLOW PEAK</span>
-                    <span className="font-display text-xl font-black block text-red-600">₹{mostExpensiveDayAmount.toLocaleString('en-IN')}</span>
-                  </div>
+                  {mostExpensiveDayEntry ? (
+                    <>
+                      <div>
+                        <span className="font-mono text-[8px] font-bold text-[var(--text-muted)] block uppercase">MOST EXPENSIVE DAY</span>
+                        <span className="font-display text-lg font-black text-[var(--text-primary)] uppercase">{new Date(mostExpensiveDayDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono text-[9px] bg-red-600 text-white px-1.5 font-bold uppercase">OUTFLOW PEAK</span>
+                        <span className="font-display text-xl font-black block text-red-600">₹{mostExpensiveDayAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="font-mono text-xs text-[var(--text-muted)]">No spending detected this month.</p>
+                  )}
                 </div>
               </div>
 
@@ -365,9 +427,9 @@ export default function Wrapped() {
                     <span className="font-display text-2xl font-black text-[var(--text-primary)]">₹{averageDailySpend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}/day</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-mono text-[9px] bg-green-600 text-white px-1.5 font-bold uppercase block">COMPARED TO JUNE</span>
-                    <span className="font-display text-sm font-black text-green-700 flex items-center justify-end">
-                      {averageDailySpendTrend}% MoM <ArrowDownRight className="w-4 h-4 text-green-700" />
+                    <span className="font-mono text-[9px] bg-green-600 text-white px-1.5 font-bold uppercase block">COMPARED TO {prevMonthUpper}</span>
+                    <span className={`font-display text-sm font-black flex items-center justify-end ${averageDailySpendTrend >= 0 ? 'text-red-600' : 'text-green-700'}`}>
+                      {averageDailySpendTrend > 0 ? '+' : ''}{averageDailySpendTrend}% MoM {averageDailySpendTrend <= 0 ? <ArrowDownRight className="w-4 h-4 text-green-700" /> : <ArrowUpRight className="w-4 h-4 text-red-600" />}
                     </span>
                   </div>
                 </div>
@@ -399,33 +461,34 @@ export default function Wrapped() {
               {/* HEATMAP */}
               <div>
                 <span className="font-mono text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wide block mb-1.5">
-                  Spending Heatmap (July 2026 Grid)
+                  Spending Heatmap ({reportMonthUpper} {reportYear} Grid)
                 </span>
                 <div className="grid grid-cols-7 gap-1 bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2.5 shadow-[3px_3px_0px_var(--shadow-color)]">
-                  {heatmapData.map((cell, idx) => {
-                    let color = 'bg-green-100 border border-green-200'; // under budget
-                    if (cell.intensity === 'over') {
-                      color = 'bg-red-500 border border-[var(--border-color)]';
-                    } else if (cell.intensity === 'moderate') {
-                      color = 'bg-yellow-400 border border-[var(--border-color)]';
-                    } else {
-                      color = 'bg-green-400 border border-[var(--border-color)]';
-                    }
+                  {heatmapCells.map((cell, idx) => {
+                    const palette = [
+                      'bg-[var(--bg-muted)] border border-[var(--border-color)]/20',
+                      'bg-green-100 border border-green-200',
+                      'bg-green-300 border border-green-400',
+                      'bg-green-500 border border-[var(--border-color)] text-white',
+                      'bg-green-700 border border-[var(--border-color)] text-white',
+                    ];
                     return (
                       <div 
                         key={idx}
-                        title={`Day ${cell.day}: ₹${cell.amount.toFixed(0)}`}
-                        className={`aspect-square w-full rounded-none transition-all ${color} flex items-center justify-center text-[7px] font-bold font-mono`}
+                        title={`Day ${cell.day}: ${cell.amount > 0 ? `₹${cell.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'No spending'}`}
+                        className={`aspect-square w-full rounded-none transition-all flex items-center justify-center text-[7px] font-bold font-mono ${palette[cell.intensity]}`}
                       >
-                        {cell.day}
+                        {cell.amount > 0 ? cell.day : ''}
                       </div>
                     );
                   })}
                 </div>
                 <div className="flex items-center justify-between text-[7px] font-mono text-[var(--text-muted)] mt-1 uppercase">
-                  <span className="text-green-600 font-bold">● Green &lt; ₹1k</span>
-                  <span className="text-yellow-600 font-bold">● Yellow ₹1k-3k</span>
-                  <span className="text-red-600 font-bold">● Red &gt; ₹3k</span>
+                  <span className="text-[var(--text-muted)] font-bold">▪ No spend</span>
+                  <span className="text-green-200 font-bold">■ Low</span>
+                  <span className="text-green-400 font-bold">■ Medium</span>
+                  <span className="text-green-600 font-bold">■ High</span>
+                  <span className="text-green-800 font-bold">■ Peak</span>
                 </div>
               </div>
             </div>
@@ -444,7 +507,7 @@ export default function Wrapped() {
                 THE BIG PICTURE
               </h3>
               <p className="font-mono text-[11px] text-[var(--text-primary)] leading-tight">
-                Comparison mapping: June vs July 2026. Your financial systems expanded beautifully.
+                Comparison mapping: {prevMonthShort} vs {reportMonthShort} {reportYear}. Your financial systems expanded beautifully.
               </p>
 
               <div className="w-full h-44 font-mono text-[9px] bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-2 shadow-[4px_4px_0px_var(--shadow-color)]">
@@ -460,8 +523,8 @@ export default function Wrapped() {
                       }} 
                       formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Value']}
                     />
-                    <Bar dataKey="Previous" name="June" fill="#E5E7EB" stroke="#000" strokeWidth={1.5} />
-                    <Bar dataKey="July" name="July" fill="#DC5C5C" stroke="#000" strokeWidth={1.5} />
+                    <Bar dataKey="Previous" name={prevMonthShort} fill="#E5E7EB" stroke="#000" strokeWidth={1.5} />
+                    <Bar dataKey="Current" name={reportMonthShort} fill="#DC5C5C" stroke="#000" strokeWidth={1.5} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -469,11 +532,11 @@ export default function Wrapped() {
               <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
                 <div className="border border-[var(--border-color)] p-1.5 bg-[var(--bg-muted)]">
                   <span className="text-[var(--text-muted)] uppercase block">Savings Delta:</span>
-                  <span className="font-bold text-green-600">+₹{(totalSavings - 42000).toLocaleString('en-IN')}</span>
+                  <span className="font-bold text-green-600">+₹{(totalSavings - prevSavings).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="border border-[var(--border-color)] p-1.5 bg-[var(--bg-muted)]">
                   <span className="text-[var(--text-muted)] uppercase block">Outflow Delta:</span>
-                  <span className="font-bold text-green-700">-₹{(52100 - totalOutflows).toLocaleString('en-IN')} Saved</span>
+                  <span className="font-bold text-green-700">-₹{(prevOutflows - totalOutflows).toLocaleString('en-IN')} Saved</span>
                 </div>
               </div>
             </div>
@@ -512,7 +575,7 @@ export default function Wrapped() {
                     <>
                       <span className="font-black text-[var(--text-primary)] block truncate">{mostExpensiveSub.service_name || mostExpensiveSub.name}</span>
                       <span className="text-red-500 font-bold">
-                        ₹{mostExpensiveSub.amount.toLocaleString('en-IN')}/{mostExpensiveSub.billing_cycle === 'yearly' || mostExpensiveSub.frequency === 'annual' ? 'yr' : 'mo'}
+                        ₹{mostExpensiveSub.amount.toLocaleString('en-IN')}/{cycleLabel(getBillingCycle(mostExpensiveSub))}
                       </span>
                     </>
                   ) : (
@@ -522,7 +585,7 @@ export default function Wrapped() {
                 <div className="border-2 border-[var(--border-color)] p-2.5 bg-[var(--bg-surface)] shadow-[2px_2px_0px_var(--shadow-color)]">
                   <span className="text-[var(--text-muted)] uppercase text-[8px] font-bold block mb-1">MOM RECURRING EXPANSION:</span>
                   <span className="font-black text-[var(--text-primary)] block">+₹{subMonthlyGrowthAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-                  <span className="text-purple-600 font-bold text-[9px]">+8.3% vs June</span>
+                  <span className="text-purple-600 font-bold text-[9px]">+{subMonthlyGrowthPct.toFixed(1)}% vs {prevMonthShort}</span>
                 </div>
               </div>
             </div>
@@ -625,7 +688,7 @@ export default function Wrapped() {
                 ACHIEVEMENTS UNLOCKED
               </h3>
               <p className="font-mono text-xs text-[var(--text-primary)] leading-tight">
-                July triggered core milestones inside our gamified financial rig. Achievements unlocked on schedule:
+                {reportMonthUpper} triggered core milestones inside our gamified financial rig. Achievements unlocked on schedule:
               </p>
 
               <div className="flex flex-col gap-2">
@@ -667,21 +730,21 @@ export default function Wrapped() {
               {/* Actual shareable card preview */}
               <div id="shareable-cents-card" className="border-4 border-[var(--border-color)] p-4 bg-[var(--card-bg)] border-t-[3px] border-t-[var(--accent-primary)] shadow-[4px_4px_0px_var(--shadow-color)] text-[var(--text-primary)] font-mono">
                 <div className="flex items-center justify-between border-b-2 border-[var(--border-color)] pb-2 mb-3">
-                  <span className="font-display text-xs font-black">COMMON CENTS // JULY 2026</span>
+                  <span className="font-display text-xs font-black">COMMON CENTS // {reportMonthUpper} {reportYear}</span>
                   <Flame className="w-4 h-4 text-red-500" />
                 </div>
                 
                 <div className="flex flex-col gap-2 text-[10px]">
                   <div className="flex justify-between border-b border-[var(--border-color)]/10 pb-1">
                     <span>SYS_OPERATOR:</span>
-                    <span className="font-bold">MYRON</span>
+                    <span className="font-bold">{(preferences.name || 'MYRON').toUpperCase()}</span>
                   </div>
                   <div className="flex justify-between border-b border-[var(--border-color)]/10 pb-1">
                     <span>SOLVENCY NET WORTH:</span>
                     <span className="font-bold">₹{netWorth.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between border-b border-[var(--border-color)]/10 pb-1">
-                    <span>JULY SAVINGS VELOCITY:</span>
+                    <span>{reportMonthUpper} SAVINGS VELOCITY:</span>
                     <span className="font-bold">{savingsRate.toFixed(1)}% ({savingsStreak}d Streak)</span>
                   </div>
                   <div className="flex justify-between border-b border-[var(--border-color)]/10 pb-1">
@@ -883,7 +946,7 @@ export default function Wrapped() {
           <div className="md:col-span-12 bg-[var(--bg-alt)] border-4 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-primary)] p-6 shadow-[5px_5px_0px_var(--shadow-color)] flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
               <span className="font-mono text-[10px] bg-[var(--bg-badge)] text-[var(--text-badge)] px-2 py-0.5 font-bold uppercase tracking-widest">INFOGRAPHIC PROTOCOL</span>
-              <h3 className="font-display text-4xl font-black mt-2 leading-none uppercase">MYRON'S JULY 2026</h3>
+              <h3 className="font-display text-4xl font-black mt-2 leading-none uppercase">{(preferences.name || 'MYRON').toUpperCase()}'S {reportMonthUpper} {reportYear}</h3>
               <p className="font-mono text-xs text-[var(--text-primary)]/80 mt-1">"A month of highs, lows, smart choices, and a few too many takeout orders."</p>
             </div>
             <div className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] px-4 py-2 font-mono text-xs font-bold text-[var(--text-primary)] shadow-[2.5px_2.5px_0px_var(--shadow-color)]">
@@ -898,7 +961,7 @@ export default function Wrapped() {
             </h4>
             <div className="flex flex-col gap-3">
               <div className="bg-[var(--card-bg)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-success)] p-3.5 shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
-                <span className="font-mono text-[9px] text-[var(--text-muted)] block uppercase">TOTAL JULY INCOME</span>
+                <span className="font-mono text-[9px] text-[var(--text-muted)] block uppercase">TOTAL {reportMonthUpper} INCOME</span>
                 <span className="font-display text-xl font-extrabold block text-[var(--accent-success)]">₹{totalInflows.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="bg-[var(--card-bg)] border-2 border-[var(--border-color)] border-t-[3px] border-t-[var(--accent-danger)] p-3.5 shadow-[2px_2px_0px_var(--shadow-color)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_var(--shadow-color)]">
@@ -930,7 +993,7 @@ export default function Wrapped() {
                 </div>
                 <div className="flex justify-between text-red-600">
                   <span>MOM CHANGE GRADIENT:</span>
-                  <span className="font-bold">+4.2%</span>
+                  <span className={`font-bold ${topCategoryMomChange >= 0 ? 'text-red-600' : 'text-green-700'}`}>{topCategoryMomChange >= 0 ? '+' : ''}{topCategoryMomChange.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
@@ -941,29 +1004,35 @@ export default function Wrapped() {
             <h4 className="font-display text-base font-black text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-1.5 mb-3 uppercase tracking-tight">
               💥 03 / CRITICAL DEBIT COLLISION
             </h4>
-            <div className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-4 shadow-[3px_3px_0px_var(--shadow-color)] h-full flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-[9px] bg-red-600 text-white px-1.5 py-0.2 font-extrabold inline-block uppercase">
-                  {biggestPurchase.category.toUpperCase()}
-                </span>
-                <span className="font-display text-lg font-black block text-[var(--text-primary)] mt-2 leading-none uppercase">
-                  {biggestPurchase.description}
-                </span>
-                <span className="font-display text-3xl font-black block text-red-600 mt-1">
-                  -₹{biggestPurchase.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
+              <div className="bg-[var(--bg-surface)] border-2 border-[var(--border-color)] p-4 shadow-[3px_3px_0px_var(--shadow-color)] h-full flex flex-col justify-between">
+                {biggestPurchase ? (
+                  <>
+                    <div>
+                      <span className="font-mono text-[9px] bg-red-600 text-white px-1.5 py-0.2 font-extrabold inline-block uppercase">
+                        {biggestPurchase.category.toUpperCase()}
+                      </span>
+                      <span className="font-display text-lg font-black block text-[var(--text-primary)] mt-2 leading-none uppercase">
+                        {biggestPurchase.description}
+                      </span>
+                      <span className="font-display text-3xl font-black block text-red-600 mt-1">
+                        -₹{biggestPurchase.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="border-t border-[var(--border-color)]/5 pt-3 mt-4 text-[10px] font-mono text-[var(--text-muted)] space-y-1">
+                      <div className="flex justify-between">
+                        <span>TRANSMITTED:</span>
+                        <span className="font-bold text-[var(--text-primary)]">{biggestPurchase.date}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{reportMonthUpper} VELOCITY IMPACT:</span>
+                        <span className="font-bold text-red-600">{biggestPurchaseImpact.toFixed(1)}% OF CASH BURN</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-mono text-xs text-[var(--text-muted)]">No debit transactions recorded in this period.</p>
+                )}
               </div>
-              <div className="border-t border-[var(--border-color)]/5 pt-3 mt-4 text-[10px] font-mono text-[var(--text-muted)] space-y-1">
-                <div className="flex justify-between">
-                  <span>TRANSMITTED:</span>
-                  <span className="font-bold text-[var(--text-primary)]">{biggestPurchase.date}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>JULY VELOCITY IMPACT:</span>
-                  <span className="font-bold text-red-600">{biggestPurchaseImpact.toFixed(1)}% OF CASH BURN</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* SECTION 4: MOST EXPENSIVE DAY & SECTION 5: AVERAGE DAILY SPEND (COL SPAN 6) */}
@@ -974,10 +1043,16 @@ export default function Wrapped() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-[#FFE2E2] border-2 border-[var(--border-color)] p-4 shadow-[2.5px_2.5px_0px_var(--shadow-color)]">
                 <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase">MOST EXPENSIVE DAY</span>
-                <span className="font-display text-sm font-black text-[var(--text-primary)] uppercase block mt-1">
-                  {new Date(mostExpensiveDayDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-                <span className="font-display text-xl font-black block text-red-600 mt-2">₹{mostExpensiveDayAmount.toLocaleString('en-IN')} spent</span>
+                {mostExpensiveDayEntry ? (
+                  <>
+                    <span className="font-display text-sm font-black text-[var(--text-primary)] uppercase block mt-1">
+                      {new Date(mostExpensiveDayDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                    <span className="font-display text-xl font-black block text-red-600 mt-2">₹{mostExpensiveDayAmount.toLocaleString('en-IN')} spent</span>
+                  </>
+                ) : (
+                  <span className="font-mono text-xs text-[var(--text-muted)] block mt-1">No spending this month</span>
+                )}
               </div>
 
               <div className="bg-[#E1FFC2] border-2 border-[var(--border-color)] p-4 shadow-[2.5px_2.5px_0px_var(--shadow-color)] flex flex-col justify-between">
@@ -985,9 +1060,9 @@ export default function Wrapped() {
                   <span className="font-mono text-[9px] font-bold text-[var(--text-muted)] block uppercase">DAILY BURN RATE</span>
                   <span className="font-display text-xl font-black text-[var(--text-primary)] mt-1">₹{averageDailySpend.toLocaleString('en-IN', { maximumFractionDigits: 0 })}/day</span>
                 </div>
-                <div className="border-t border-[var(--border-color)]/10 pt-2 mt-2 font-mono text-[10px] text-green-700 flex justify-between">
-                  <span>COMPARED TO JUNE:</span>
-                  <span className="font-bold">{averageDailySpendTrend}% decrease</span>
+                <div className="border-t border-[var(--border-color)]/10 pt-2 mt-2 font-mono text-[10px] flex justify-between">
+                  <span className="text-[var(--text-muted)] uppercase">COMPARED TO {prevMonthUpper}:</span>
+                  <span className={`font-bold ${averageDailySpendTrend >= 0 ? 'text-red-600' : 'text-green-700'}`}>{averageDailySpendTrend > 0 ? '+' : ''}{averageDailySpendTrend}%</span>
                 </div>
               </div>
             </div>
@@ -1010,17 +1085,21 @@ export default function Wrapped() {
               </div>
 
               <div className="grid grid-cols-7 gap-1 bg-[var(--bg-surface)] border border-[var(--border-color)] p-2">
-                {heatmapData.map((cell) => {
-                  let color = 'bg-green-400 border border-[var(--border-color)]';
-                  if (cell.intensity === 'over') color = 'bg-red-500 border border-[var(--border-color)]';
-                  else if (cell.intensity === 'moderate') color = 'bg-yellow-400 border border-[var(--border-color)]';
+                {heatmapCells.map((cell) => {
+                  const palette = [
+                    'bg-[var(--bg-muted)] border border-[var(--border-color)]/20',
+                    'bg-green-100 border border-green-200',
+                    'bg-green-300 border border-green-400',
+                    'bg-green-500 border border-[var(--border-color)] text-white',
+                    'bg-green-700 border border-[var(--border-color)] text-white',
+                  ];
                   return (
                     <div 
                       key={cell.day} 
-                      className={`aspect-square w-full ${color} flex items-center justify-center text-[7px] font-mono font-bold`}
-                      title={`Day ${cell.day}: ₹${cell.amount.toFixed(0)}`}
+                      className={`aspect-square w-full flex items-center justify-center text-[7px] font-mono font-bold ${palette[cell.intensity]}`}
+                      title={`Day ${cell.day}: ${cell.amount > 0 ? `₹${cell.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 'No spending'}`}
                     >
-                      {cell.day}
+                      {cell.amount > 0 ? cell.day : ''}
                     </div>
                   );
                 })}
@@ -1032,7 +1111,7 @@ export default function Wrapped() {
           <div className="md:col-span-4 bg-[var(--bg-surface)] border-4 border-[var(--border-color)] p-5 shadow-[4px_4px_0px_var(--shadow-color)] flex flex-col justify-between">
             <div>
               <h4 className="font-display text-base font-black text-[var(--text-primary)] border-b-2 border-[var(--border-color)] pb-1.5 mb-3 uppercase tracking-tight">
-                📈 08 / THE BIG PICTURE (JUNE VS JULY 2026)
+                📈 08 / THE BIG PICTURE ({prevMonthShort} VS {reportMonthShort} {reportYear})
               </h4>
               <div className="w-full h-40 font-mono text-[9px] bg-[var(--bg-surface)] border border-[var(--border-color)] p-2 mb-3">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1047,8 +1126,8 @@ export default function Wrapped() {
                       }} 
                       formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Value']}
                     />
-                    <Bar dataKey="Previous" name="June" fill="#E5E7EB" stroke="#000" strokeWidth={1.5} />
-                    <Bar dataKey="July" name="July" fill="#DC5C5C" stroke="#000" strokeWidth={1.5} />
+                    <Bar dataKey="Previous" name={prevMonthShort} fill="#E5E7EB" stroke="#000" strokeWidth={1.5} />
+                    <Bar dataKey="Current" name={reportMonthShort} fill="#DC5C5C" stroke="#000" strokeWidth={1.5} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1070,12 +1149,12 @@ export default function Wrapped() {
                 <div className="border border-[var(--border-color)] p-2 bg-[var(--bg-muted)] flex justify-between items-center">
                   <span className="text-[var(--text-muted)] uppercase">Most Expensive:</span>
                   <span className="font-bold truncate max-w-[120px] text-right">
-                    {mostExpensiveSub ? `${mostExpensiveSub.service_name || mostExpensiveSub.name} (₹${mostExpensiveSub.amount})` : 'None'}
+                    {mostExpensiveSub ? `${mostExpensiveSub.service_name || mostExpensiveSub.name} (₹${mostExpensiveSub.amount.toLocaleString('en-IN')}/${cycleLabel(getBillingCycle(mostExpensiveSub))})` : 'None'}
                   </span>
                 </div>
                 <div className="border border-[var(--border-color)] p-2 bg-[var(--bg-muted)] flex justify-between items-center">
                   <span className="text-[var(--text-muted)] uppercase">Growth vs Last Month:</span>
-                  <span className="font-bold text-purple-600">+8.3% (+₹{subMonthlyGrowthAmount.toFixed(0)})</span>
+                  <span className="font-bold text-purple-600">+{subMonthlyGrowthPct.toFixed(1)}% (+₹{subMonthlyGrowthAmount.toFixed(0)})</span>
                 </div>
               </div>
             </div>
@@ -1134,11 +1213,11 @@ export default function Wrapped() {
             <div className="flex flex-col gap-4">
               <div className="border-4 border-[var(--border-color)] p-4 bg-[var(--card-bg)] border-t-[3px] border-t-[var(--accent-primary)] shadow-[3px_3px_0px_var(--shadow-color)] text-[var(--text-primary)] font-mono text-[11px]">
                 <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-1 mb-2">
-                  <span className="font-display font-black text-xs uppercase">COMMON CENTS // MYRON</span>
+                  <span className="font-display font-black text-xs uppercase">COMMON CENTS // {(preferences.name || 'MYRON').toUpperCase()}</span>
                   <Flame className="w-3.5 h-3.5 text-red-500" />
                 </div>
                 <div className="space-y-1">
-                  <div className="flex justify-between"><span>OPERATOR:</span><span className="font-bold">MYRON</span></div>
+                  <div className="flex justify-between"><span>OPERATOR:</span><span className="font-bold">{(preferences.name || 'MYRON').toUpperCase()}</span></div>
                   <div className="flex justify-between"><span>NET WORTH:</span><span className="font-bold">₹{netWorth.toLocaleString('en-IN')}</span></div>
                   <div className="flex justify-between"><span>SAVINGS VELOCITY:</span><span className="font-bold">{savingsRate.toFixed(1)}%</span></div>
                   <div className="flex justify-between"><span>DOMINANT LEAK:</span><span className="font-bold uppercase">{topCategoryName}</span></div>

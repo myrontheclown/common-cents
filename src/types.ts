@@ -46,12 +46,14 @@ export interface Budget {
   period: 'monthly' | 'weekly';
 }
 
+export type BillingCycle = 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
+
 export interface Subscription {
   id: string;
   // Required fields for the new entity
   service_name: string;
   amount: number;
-  billing_cycle: 'monthly' | 'yearly';
+  billing_cycle: BillingCycle;
   category: string;
   payment_account: string;
   renewal_date: string;
@@ -66,6 +68,9 @@ export interface Subscription {
   nextBillingDate?: string;
   accountId?: string;
   isActive?: boolean;
+
+  // Client-tracked field: last date the subscription was marked as paid
+  lastPaidDate?: string;
 }
 
 export interface Goal {

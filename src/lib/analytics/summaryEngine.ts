@@ -1,4 +1,5 @@
 import type { Transaction, Budget, Goal, Subscription, Achievement, Account, PaymentMethod } from '../../types';
+import { monthlyEquivalent, getBillingCycle } from '../subscriptionUtils';
 import { daysBetween, isInRange } from './dateRanges';
 
 export interface PeriodSummary {
@@ -59,10 +60,7 @@ export function calculatePeriodSummary(
 
   const subCost = subscriptions
     .filter(s => s.active)
-    .reduce((sum, s) => {
-      if (s.billing_cycle === 'yearly') return sum + (s.amount / 12);
-      return sum + s.amount;
-    }, 0);
+    .reduce((sum, s) => sum + monthlyEquivalent(s.amount, getBillingCycle(s)), 0);
 
   const achCount = achievements.filter(a => a.isUnlocked && a.unlockedAt && isInRange(a.unlockedAt, start, end)).length;
 

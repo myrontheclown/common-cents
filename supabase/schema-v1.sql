@@ -252,6 +252,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
         CHECK (
             billing_cycle IN (
                 'monthly',
+                'quarterly',
+                'half_yearly',
                 'yearly'
             )
         ),

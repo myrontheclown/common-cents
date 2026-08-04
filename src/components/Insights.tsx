@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useFinanceStore } from '../store';
 import { getPaymentMethodIcon } from '../lib/paymentMethodIcons';
+import { getBillingCycle, monthlyEquivalent, yearlyEquivalent, cycleLabel } from '../lib/subscriptionUtils';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 
 export default function Insights() {
@@ -304,16 +305,11 @@ export default function Insights() {
           {(() => {
             const activeSubs = subscriptions.filter(s => s.active ?? s.isActive ?? true);
             const yearlySpend = activeSubs.reduce((sum, s) => {
-              const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-              if (cycle === 'yearly') {
-                return sum + s.amount;
-              }
-              return sum + (s.amount * 12);
+              return sum + yearlyEquivalent(s.amount, getBillingCycle(s));
             }, 0);
 
             const expensiveSubs = activeSubs.filter(s => {
-              const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-              const monthlyEquiv = (cycle === 'yearly') ? (s.amount / 12) : s.amount;
+              const monthlyEquiv = monthlyEquivalent(s.amount, getBillingCycle(s));
               return monthlyEquiv > 500;
             });
 
@@ -338,14 +334,14 @@ export default function Insights() {
                   {expensiveSubs.length > 0 ? (
                     <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
                       {expensiveSubs.map(s => {
-                        const cycle = s.billing_cycle || (s.frequency === 'annual' ? 'yearly' : 'monthly');
-                        const monthlyEquiv = (cycle === 'yearly') ? (s.amount / 12) : s.amount;
+                        const cycle = getBillingCycle(s);
+                        const monthlyEquiv = monthlyEquivalent(s.amount, cycle);
                         return (
                           <div key={s.id} className="border border-[var(--border-color)] bg-[#FFE2E2] p-2.5 shadow-[1.5px_1.5px_0px_var(--shadow-color)]">
                             <div className="flex items-center justify-between font-bold mb-1">
                               <span className="text-[var(--text-primary)] uppercase text-[10px]">{s.service_name || s.name}</span>
                               <span className="text-red-600 text-[10px]">
-                                ₹{s.amount.toLocaleString('en-IN')}/{cycle === 'yearly' ? 'yr' : 'mo'}
+                                ₹{s.amount.toLocaleString('en-IN')}/{cycleLabel(cycle)}
                               </span>
                             </div>
                             <p className="text-[9px] text-[var(--text-primary)] leading-relaxed">

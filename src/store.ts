@@ -20,6 +20,7 @@ import { goalRowToGoal, goalToInsert, goalToUpdate } from './lib/db/goalTypes';
 import { subscriptionRowToSubscription, subscriptionToInsert, subscriptionToUpdate } from './lib/db/subscriptionTypes';
 import { budgetRowToBudget, budgetToInsert, budgetToUpdate } from './lib/db/budgetTypes';
 import { mergeAchievements } from './lib/db/achievementTypes';
+import { getBillingCycle, advanceRenewalDate } from './lib/subscriptionUtils';
 
 const vaultRepo = new VaultRepository();
 const transactionRepo = new TransactionRepository();
@@ -79,6 +80,7 @@ interface FinanceState {
   updateSubscription: (sub: Subscription) => Promise<void>;
   deleteSubscription: (id: string) => Promise<void>;
   toggleSubscriptionActive: (id: string) => Promise<void>;
+  markSubscriptionPaid: (id: string, userId?: string) => Promise<void>;
   
   addGoal: (goal: Omit<Goal, 'id'>, userId?: string) => Promise<void>;
   updateGoal: (goal: Goal) => Promise<void>;
@@ -707,7 +709,10 @@ export const useFinanceStore = create<FinanceState>()(
         try {
           const row = await subscriptionRepo.updateSubscription(updatedSub.id, subscriptionToUpdate(updatedSub));
           set(s => ({
-            subscriptions: s.subscriptions.map(sub => sub.id === row.id ? subscriptionRowToSubscription(row) : sub)
+            subscriptions: s.subscriptions.map(sub => {
+              if (sub.id !== row.id) return sub;
+              return { ...subscriptionRowToSubscription(row), lastPaidDate: sub.lastPaidDate };
+            })
           }));
         } catch (e) {
           set({ subscriptions: snapshot });
@@ -746,6 +751,44 @@ export const useFinanceStore = create<FinanceState>()(
           set({ subscriptions: snapshot });
           throw e;
         }
+      },
+
+      markSubscriptionPaid: async (id, userId) => {
+        const sub = get().subscriptions.find(s => s.id === id);
+        if (!sub) return;
+
+        const vaultId = sub.payment_account || sub.accountId || '';
+        if (!vaultId) {
+          throw new Error('No payment vault linked to this subscription.');
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const cycle = getBillingCycle(sub);
+        const nextRenewal = advanceRenewalDate(
+          sub.renewal_date || sub.nextBillingDate || todayStr,
+          cycle,
+        );
+
+        await get().addTransaction(
+          {
+            date: todayStr,
+            amount: sub.amount,
+            description: `Subscription: ${sub.service_name || sub.name || 'Recurring Payment'}`,
+            category: sub.category || 'Utilities',
+            type: 'expense',
+            accountId: vaultId,
+          },
+          userId,
+        );
+
+        const updated: Subscription = {
+          ...sub,
+          active: true,
+          renewal_date: nextRenewal,
+          nextBillingDate: nextRenewal,
+          lastPaidDate: todayStr,
+        };
+        await get().updateSubscription(updated);
       },
 
       addGoal: async (goal, userId) => {

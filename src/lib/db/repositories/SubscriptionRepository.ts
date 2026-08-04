@@ -1,4 +1,5 @@
 import { supabase } from '../../supabase';
+import type { BillingCycle } from '../../../types';
 
 export interface SubscriptionRow {
   id: string;
@@ -7,7 +8,7 @@ export interface SubscriptionRow {
   payment_method_id: string | null;
   service_name: string;
   amount: number;
-  billing_cycle: 'monthly' | 'yearly';
+  billing_cycle: BillingCycle;
   renewal_date: string;
   category: string | null;
   active: boolean;
@@ -19,7 +20,7 @@ export interface SubscriptionRow {
 export interface SubscriptionInsert {
   service_name: string;
   amount: number;
-  billing_cycle: 'monthly' | 'yearly';
+  billing_cycle: BillingCycle;
   renewal_date: string;
   vault_id?: string | null;
   category?: string | null;
@@ -30,7 +31,7 @@ export interface SubscriptionInsert {
 export interface SubscriptionUpdate {
   service_name?: string;
   amount?: number;
-  billing_cycle?: 'monthly' | 'yearly';
+  billing_cycle?: BillingCycle;
   renewal_date?: string;
   vault_id?: string | null;
   category?: string | null;
